@@ -37,9 +37,7 @@ export const askAssistant = async (message: string | null, audioUri: string | nu
     });
   }
 
-  const response = await api.post('/api/assistant', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const response = await api.post('/api/assistant', formData);
   return response.data;
 };
 

@@ -51,23 +51,45 @@ export default function AssistantScreen() {
 
   async function startRecording() {
     try {
+      // Ensure any existing recording is cleared
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+      }
+
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status === 'granted') {
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        setRecording(recording);
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        
+        const { recording: newRecording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        setRecording(newRecording);
       }
     } catch (err) {
       console.error('Failed to start recording', err);
+      setRecording(null);
     }
   }
 
   async function stopRecording() {
     if (!recording) return;
-    setRecording(null);
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    handleSend(null, uri);
+    
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null); // Clear state after stopping
+      
+      if (uri) {
+        handleSend(null, uri);
+      }
+    } catch (err) {
+      console.error('Failed to stop recording', err);
+      setRecording(null);
+    }
   }
 
   return (
