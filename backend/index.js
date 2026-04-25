@@ -124,6 +124,12 @@ app.post('/api/tailor', async (req, res) => {
 
 // 3. Assistant (Chat/Voice)
 app.post('/api/assistant', upload.single('audio'), async (req, res) => {
+  console.log("Assistant Request Received:", {
+    hasFile: !!req.file,
+    bodyKeys: Object.keys(req.body),
+    message: req.body.message
+  });
+
   const { message, userProfile, preferences } = req.body;
   try {
     const parts = [];
