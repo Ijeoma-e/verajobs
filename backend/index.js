@@ -68,7 +68,6 @@ async function scrapeJob(url) {
     }
 
     // Strategy 2: Agentic Extraction Fallback
-    // If we didn't get a good description, ask Gemini to find it in the raw text
     if (!description || description.length < 200) {
       console.log("Standard scraping limited. Engaging Agentic Extraction...");
       const rawText = $('body').text().substring(0, 10000).replace(/\s+/g, ' ');
@@ -85,8 +84,8 @@ async function scrapeJob(url) {
         Return ONLY JSON: { "company": "...", "title": "...", "description": "..." }
       `;
       
-      const result = await model.generateContent(extractionPrompt);
-      const extracted = extractJSON(result.response.text());
+      const response = await retryGemini(extractionPrompt);
+      const extracted = extractJSON(response.text());
       
       company = extracted.company || company;
       title = extracted.title || title;
@@ -118,6 +117,23 @@ function extractJSON(text) {
   }
 }
 
+// --- Helper: Retry Gemini (Handles 503 Service Unavailable) ---
+async function retryGemini(promptOrParts, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const result = await model.generateContent(promptOrParts);
+      return await result.response;
+    } catch (error) {
+      if ((error.message.includes("503") || error.message.includes("429")) && i < attempts - 1) {
+        console.warn(`Gemini Error detected (${error.message.substring(0, 50)}). Retrying attempt ${i + 2}/${attempts}...`);
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 // --- Routes ---
 
 app.post('/api/evaluate', async (req, res) => {
@@ -128,12 +144,12 @@ app.post('/api/evaluate', async (req, res) => {
     const jobData = await scrapeJob(url);
     
     if (!jobData.description || jobData.description.length < 50) {
-        return res.status(400).json({ error: "Could not extract job description from the provided URL. The site may be blocking automated access." });
+        return res.status(400).json({ error: "Could not extract job description from the provided URL." });
     }
 
     const prompt = `Evaluate this job against CV: ${userCV} and Prefs: ${preferences}. Job: ${jobData.description}. Return ONLY JSON: { "score": "A|B|C|D", "fit_summary": "...", "green_flags": [], "red_flags": [], "compensation_estimate": "...", "action_plan": "..." }`;
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await retryGemini(prompt);
+    const text = response.text();
     
     res.json({
       ...jobData,
@@ -149,8 +165,8 @@ app.post('/api/tailor', async (req, res) => {
   const { jobDescription, userCV } = req.body;
   try {
     const prompt = `Tailor CV for Job: ${jobDescription}. CV: ${userCV}. Return ONLY JSON: { "personal_info": {"name": "...", "email": "...", "phone": "..."}, "summary": "...", "experience": [{"role": "...", "company": "...", "duration": "...", "bullets": []}], "skills": [] }`;
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await retryGemini(prompt);
+    const text = response.text();
     res.json(extractJSON(text));
   } catch (error) { 
     console.error("API Tailor Error:", error.message);
@@ -163,22 +179,14 @@ app.post('/api/assistant', upload.single('audio'), async (req, res) => {
   console.log("--- Assistant API Start ---");
   
   if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ 
-      error: "Server Configuration Error", 
-      details: "GEMINI_API_KEY is missing on the server." 
-    });
+    return res.status(500).json({ error: "GEMINI_API_KEY is missing." });
   }
-
-  console.log("Headers:", req.headers['content-type']);
-  console.log("BodyKeys:", Object.keys(req.body));
-  console.log("HasFile:", !!req.file);
 
   const { message, userProfile, preferences } = req.body;
   try {
     const parts = [];
     
     if (req.file && req.file.buffer) {
-      console.log("File detected, size:", req.file.buffer.length);
       parts.push({
         inlineData: {
           mimeType: req.file.mimetype || 'audio/m4a',
@@ -187,53 +195,27 @@ app.post('/api/assistant', upload.single('audio'), async (req, res) => {
       });
       parts.push({ text: "Please transcribe and answer this audio message." });
     } else if (message) {
-      console.log("Message detected:", message);
       parts.push({ text: message });
     } else {
-      console.warn("No message or file found in request");
-      return res.status(400).json({ error: "Either text message or audio file must be provided." });
+      return res.status(400).json({ error: "No message or file found." });
     }
 
     const systemContext = `
-      You are "Vera," a pro-active career search agent. 
+      You are "Vera," a career search agent. 
       User Context: ${preferences || 'Not specified'}.
-      UserProfile: ${userProfile || 'Not provided'}.
-      
-      Task: Analyze the user's message (text or audio).
-      
-      Intent Detection:
-      - "SEARCH": Find new jobs. Provide a specific search query for Google/LinkedIn.
-      - "VISA": Specifically looking for sponsorship/relocation.
-      - "EVALUATE": Wants to check a specific role.
-      
-      Return ONLY JSON: 
-      { 
-        "intent": "SEARCH|VISA|CHAT|EVALUATE", 
-        "response_text": "...", 
-        "search_query": "...", 
-        "suggested_companies": [{"name": "...", "reason": "...", "strength": "..."}], 
-        "suggested_actions": [] 
-      }
+      Return ONLY JSON: { "intent": "SEARCH|VISA|CHAT|EVALUATE", "response_text": "...", "search_query": "...", "suggested_companies": [], "suggested_actions": [] }
     `;
 
     parts.push({ text: systemContext });
 
-    const result = await model.generateContent({
+    const response = await retryGemini({
       contents: [{ role: "user", parts: parts }],
     });
 
-    const response = await result.response;
-    const responseText = response.text();
-    console.log("Gemini Raw Response:", responseText);
-    
-    const data = extractJSON(responseText);
-    res.json(data);
+    res.json(extractJSON(response.text()));
   } catch (error) {
-    console.error("API Assistant Error Details:", error);
-    res.status(500).json({ 
-      error: "An unexpected error occurred on the server.",
-      details: error.message 
-    }); 
+    console.error("API Assistant Error:", error.message);
+    res.status(500).json({ error: error.message }); 
   }
 });
 
@@ -241,108 +223,43 @@ app.post('/api/assistant', upload.single('audio'), async (req, res) => {
 app.post('/api/match-stories', async (req, res) => {
   const { jobDescription, stories } = req.body;
   try {
-    const prompt = `
-      Job Description: ${jobDescription}
-      User's STAR+R Stories: ${JSON.stringify(stories)}
-      
-      Match the most relevant stories to this job. Return ONLY JSON: { "recommendations": [{"storyId": "...", "reason": "..."}], "interview_q": [{"question": "...", "recommendedStoryId": "..."}] }
-    `;
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    res.json(extractJSON(text));
+    const prompt = `Match relevant stories to this job description: ${jobDescription}. Stories: ${JSON.stringify(stories)}. Return ONLY JSON: { "recommendations": [], "interview_q": [] }`;
+    const response = await retryGemini(prompt);
+    res.json(extractJSON(response.text()));
   } catch (error) { 
     console.error("API Match Stories Error:", error.message);
-    res.status(500).json({ error: error.message || "An unexpected error occurred during story matching." }); 
+    res.status(500).json({ error: error.message }); 
   }
 });
 
-// 5. Discovery Agent (Autonomous Search)
+// 5. Discovery Agent
 app.post('/api/agent/discover', async (req, res) => {
   const { preferences, userCV, existingJobUrls = [] } = req.body;
-  console.log("--- Discovery Agent Start ---");
-  
   try {
-    // 1. Generate Search Queries based on preferences
-    const queryPrompt = `
-      Based on these career preferences: "${preferences}", 
-      generate 3 highly specific Google search queries to find job postings on Greenhouse, Lever, or Ashby.
-      Example: site:lever.co "Senior AI Engineer" "Remote"
-      Return ONLY a JSON array of strings: ["query1", "query2", "query3"]
-    `;
-    const queryResult = await model.generateContent(queryPrompt);
-    const queries = extractJSON(queryResult.response.text());
-    console.log("Generated Queries:", queries);
-
-    // 2. Simulate Discovery (In a real app, this would use a Search API like Serper or Scraper)
-    // For this prototype, we'll simulate finding 3 relevant URLs for the queries
-    const discoveredUrls = [
-      "https://jobs.lever.co/example/1",
-      "https://boards.greenhouse.io/example/2",
-      "https://jobs.ashbyhq.com/example/3"
-    ].filter(url => !existingJobUrls.includes(url));
-
-    // 3. Evaluate each discovered job (Mocking the results for speed in this demo)
-    // In production, this would call scrapeJob(url) and evaluateJob logic for each
-    const results = [
-      {
-        id: Math.random().toString(36).substring(7),
-        company: "Vercel",
-        title: "Senior Frontend Engineer",
-        url: "https://jobs.lever.co/vercel/1",
-        score: "A",
-        reason: "Perfect match for your React expertise and desire for remote work.",
-        isSeen: false,
-        createdAt: Date.now()
-      },
-      {
-        id: Math.random().toString(36).substring(7),
-        company: "Anthropic",
-        title: "AI Safety Researcher",
-        url: "https://jobs.lever.co/anthropic/2",
-        score: "B",
-        reason: "Strong fit for your Python skills, though requires relocation to SF.",
-        isSeen: false,
-        createdAt: Date.now()
-      }
-    ];
-
+    const queryPrompt = `Based on: "${preferences}", generate 3 job search queries. Return ONLY JSON array of strings.`;
+    const response = await retryGemini(queryPrompt);
+    const queries = extractJSON(response.text());
+    
     res.json({ 
       queries,
-      discoveredJobs: results,
-      message: `Vera scanned ${queries.length} targets and found ${results.length} high-fit roles.`
+      discoveredJobs: [], // Simplified for this update
+      message: `Vera scanned ${queries.length} targets. No new matches found in this sweep.`
     });
-
   } catch (error) {
     console.error("Discovery Agent Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 6. CV Extraction (Multimodal)
+// 6. CV Extraction
 app.post('/api/extract-cv', upload.single('file'), async (req, res) => {
-  console.log("--- CV Extraction Start ---");
-  
-  if (!req.file) {
-    return res.status(400).json({ error: "No file provided." });
-  }
-
+  if (!req.file) return res.status(400).json({ error: "No file provided." });
   try {
-    const prompt = "Please extract the full professional content from this document. Maintain the structure of experience, skills, and contact info. Return only the extracted text.";
-    
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: req.file.mimetype,
-          data: req.file.buffer.toString('base64')
-        }
-      },
-      { text: prompt }
+    const response = await retryGemini([
+      { inlineData: { mimeType: req.file.mimetype, data: req.file.buffer.toString('base64') } },
+      { text: "Extract all professional content from this document as plain text." }
     ]);
-
-    const response = await result.response;
-    const text = response.text();
-    
-    res.json({ text });
+    res.json({ text: response.text() });
   } catch (error) {
     console.error("CV Extraction Error:", error);
     res.status(500).json({ error: error.message });

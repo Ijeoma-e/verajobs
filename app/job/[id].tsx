@@ -169,10 +169,9 @@ export default function JobDetailScreen() {
       {/* Analysis Grid */}
       <View style={styles.section}>
          <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="sparkles" size={18} color="#6366F1" />
+            <MaterialCommunityIcons name="auto-fix" size={18} color="#6366F1" />
             <Text style={styles.sectionTitle}>Aura Analysis</Text>
-         </View>
-         <View style={styles.analysisCard}>
+         </View>         <View style={styles.analysisCard}>
             <Text style={styles.analysisText}>{job.evaluation.fit_summary}</Text>
          </View>
       </View>
