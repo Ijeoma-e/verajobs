@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Dimensions, ActivityIndicator, Platform, Switch } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '@/services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { List } from 'react-native-paper';
 
 const { width } = Dimensions.get('window');
 
@@ -14,6 +15,8 @@ export default function ProfileScreen() {
   const [name, setName] = useState(user?.name || '');
   const [cv, setCv] = useState(user?.baseCV || '');
   const [prefs, setPrefs] = useState(user?.preferences || '');
+  const [isAutonomous, setIsAutonomous] = useState(user?.aiSettings?.isAutonomous || false);
+  const [autoTailor, setAutoTailor] = useState(user?.aiSettings?.autoTailor || false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -21,6 +24,8 @@ export default function ProfileScreen() {
       setName(user.name);
       setCv(user.baseCV);
       setPrefs(user.preferences);
+      setIsAutonomous(user.aiSettings?.isAutonomous || false);
+      setAutoTailor(user.aiSettings?.autoTailor || false);
     }
   }, [user]);
 
@@ -32,6 +37,11 @@ export default function ProfileScreen() {
       email: auth.currentUser?.email || user?.email || '',
       baseCV: cv,
       preferences: prefs,
+      aiSettings: {
+        isAutonomous,
+        scanFrequency: 'daily',
+        autoTailor,
+      }
     };
 
     try {
@@ -111,6 +121,31 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Vera AI Settings */}
+        <View style={styles.auraField}>
+          <View style={styles.fieldHeader}>
+            <MaterialCommunityIcons name="robot-outline" size={18} color="#6366F1" />
+            <Text style={styles.fieldLabel}>Vera Superpowers</Text>
+          </View>
+          <View style={styles.auraTextAreaBox}>
+            <List.Item
+              title="Autonomous Mode"
+              description="Vera scans for new jobs daily while you sleep."
+              right={() => <Switch value={isAutonomous} onValueChange={setIsAutonomous} color="#6366F1" />}
+              titleStyle={styles.listTitle}
+              descriptionStyle={styles.listDesc}
+            />
+            <View style={styles.cardDivider} />
+            <List.Item
+              title="Auto-Tailoring"
+              description="Automatically tailor your CV for high-fit roles."
+              right={() => <Switch value={autoTailor} onValueChange={setAutoTailor} color="#6366F1" />}
+              titleStyle={styles.listTitle}
+              descriptionStyle={styles.listDesc}
+            />
+          </View>
+        </View>
+
         <TouchableOpacity 
           style={styles.saveBtn} 
           onPress={handleSave} 
@@ -144,8 +179,11 @@ const styles = StyleSheet.create({
   fieldHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   fieldLabel: { fontSize: 13, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8 },
   auraInput: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, fontSize: 16, color: '#0F172A', borderWeight: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  auraTextAreaBox: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, borderWeight: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  auraTextAreaBox: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, borderWidth: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   auraTextArea: { height: 250, fontSize: 15, color: '#0F172A', lineHeight: 22 },
+  listTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  listDesc: { fontSize: 12, color: '#64748B' },
+  cardDivider: { height: 1, backgroundColor: '#F1F3FF', marginHorizontal: 15 },
   saveBtn: { height: 64, borderRadius: 22, overflow: 'hidden', marginTop: 10, shadowColor: '#6366F1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8 },
   saveGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   saveBtnText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },

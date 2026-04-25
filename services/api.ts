@@ -88,4 +88,8 @@ export const matchStories = async (jobDescription: string, stories: any[]) => {
   return postJSON('/api/match-stories', { jobDescription, stories });
 };
 
-export default { evaluateJob, getTailoredCV, askAssistant, matchStories };
+export const discoverJobs = async (preferences: string, userCV: string, existingUrls: string[]) => {
+  return postJSON('/api/agent/discover', { preferences, userCV, existingUrls });
+};
+
+export default { evaluateJob, getTailoredCV, askAssistant, matchStories, discoverJobs };

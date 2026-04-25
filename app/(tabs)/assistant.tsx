@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, Linking } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
-import { askAssistant } from '@/services/api';
+import { askAssistant, discoverJobs } from '@/services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -11,15 +11,31 @@ import { Avatar, Card, IconButton } from 'react-native-paper';
 const { width } = Dimensions.get('window');
 
 export default function AssistantScreen() {
+  const { user, discoveredJobs, setDiscoveredJobs, markDiscoveredJobAsSeen } = useStore();
   const [messages, setMessages] = useState<any[]>([
-    { id: 1, text: "Hi, I'm Vera. Let's elevate your career. How can I assist you today?", sender: 'ai' }
+    { id: 1, text: "Hi, I'm Vera. Identity synced. Ready to scan for your next high-fit role?", sender: 'ai' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const isPreparing = useRef(false);
-  const { user } = useStore();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const unseenJobs = discoveredJobs.filter(j => !j.isSeen);
+    if (unseenJobs.length > 0) {
+      setTimeout(() => {
+        const report = {
+          id: 'report-' + Date.now(),
+          text: `Aura Intelligence Alert: I've identified ${unseenJobs.length} new high-fit roles while your identity was synced. Scanning background portals was successful.`,
+          sender: 'ai',
+          discoveredJobs: unseenJobs
+        };
+        setMessages(prev => [...prev, report]);
+        unseenJobs.forEach(j => markDiscoveredJobAsSeen(j.id));
+      }, 1000);
+    }
+  }, []);
 
   const handleSend = async (text: string | null, audioUri: string | null = null) => {
     if (!text && !audioUri) return;
@@ -31,6 +47,26 @@ export default function AssistantScreen() {
     setLoading(true);
 
     try {
+      // Agentic Intent Detection: If user mentions "scan" or "find jobs"
+      const lowerText = (text || "").toLowerCase();
+      if (lowerText.includes("scan") || lowerText.includes("find jobs")) {
+        setMessages(prev => [...prev, { id: Date.now() + 5, text: "Initiating Autonomous Discovery Loop... Scoping career portals.", sender: 'ai' }]);
+        
+        const existingUrls = discoveredJobs.map(j => j.url);
+        const result = await discoverJobs(user?.preferences || "", user?.baseCV || "", existingUrls);
+        
+        setDiscoveredJobs([...result.discoveredJobs, ...discoveredJobs]);
+        
+        const aiMsg = { 
+          id: Date.now() + 1, 
+          text: result.message, 
+          sender: 'ai',
+          discoveredJobs: result.discoveredJobs
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        return;
+      }
+
       const result = await askAssistant(text, audioUri, user, user?.preferences || '');
       const aiMsg = { 
         id: Date.now() + 1, 
@@ -157,6 +193,24 @@ export default function AssistantScreen() {
                 </View>
               )}
 
+              {/* Agentic Discovered Jobs */}
+              {msg.discoveredJobs && (
+                <View style={styles.discoveredGrid}>
+                  {msg.discoveredJobs.map((j: any) => (
+                    <TouchableOpacity key={j.id} style={styles.discoveredCard} onPress={() => Linking.openURL(j.url)}>
+                      <View style={styles.discHeader}>
+                        <View style={styles.discBadge}>
+                          <Text style={styles.discBadgeText}>{j.score}</Text>
+                        </View>
+                        <Text style={styles.discCompany}>{j.company}</Text>
+                      </View>
+                      <Text style={styles.discTitle}>{j.title}</Text>
+                      <Text style={styles.discReason} numberOfLines={2}>{j.reason}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
               {msg.action && (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(msg.searchUrl)}>
                   <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.actionGradient} start={{x:0, y:0}} end={{x:1, y:0}}>
@@ -235,6 +289,14 @@ const styles = StyleSheet.create({
   auraCompanyCard: { backgroundColor: '#F9FAFF', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#EEF0FF' },
   auraCompanyName: { fontSize: 14, fontWeight: '800', color: '#0F172A' },
   auraCompanyReason: { fontSize: 11, color: '#64748B', marginTop: 3 },
+  discoveredGrid: { marginTop: 15, gap: 10 },
+  discoveredCard: { backgroundColor: '#F8FAFC', padding: 16, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0' },
+  discHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  discBadge: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#6366F1', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  discBadgeText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  discCompany: { fontSize: 12, fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
+  discTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
+  discReason: { fontSize: 12, color: '#475569', marginTop: 4, lineHeight: 18 },
   actionBtn: { marginTop: 15, borderRadius: 12, overflow: 'hidden' },
   actionGradient: { paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actionBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },

@@ -8,6 +8,11 @@ interface UserProfile {
   email: string;
   baseCV: string;
   preferences: string;
+  aiSettings?: {
+    isAutonomous: boolean;
+    scanFrequency: 'daily' | 'weekly';
+    autoTailor: boolean;
+  };
 }
 
 interface Job {
@@ -25,6 +30,17 @@ interface Job {
   contactPerson?: string;
 }
 
+interface DiscoveredJob {
+  id: string;
+  company: string;
+  title: string;
+  url: string;
+  score: string;
+  reason: string;
+  isSeen: boolean;
+  createdAt: number;
+}
+
 interface Story {
   id: string;
   title: string;
@@ -40,12 +56,15 @@ interface AppState {
   user: UserProfile | null;
   jobs: Job[];
   stories: Story[];
+  discoveredJobs: DiscoveredJob[];
   setUser: (user: UserProfile | null) => void;
   setJobs: (jobs: Job[]) => void;
   addJob: (job: Job) => void;
   updateJob: (id: string, updates: Partial<Job>) => void;
   setStories: (stories: Story[]) => void;
   addStory: (story: Story) => void;
+  setDiscoveredJobs: (jobs: DiscoveredJob[]) => void;
+  markDiscoveredJobAsSeen: (id: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -54,6 +73,7 @@ export const useStore = create<AppState>()(
       user: null,
       jobs: [],
       stories: [],
+      discoveredJobs: [],
       setUser: (user) => set({ user }),
       setJobs: (jobs) => set({ jobs }),
       addJob: (job) => set((state) => ({ jobs: [job, ...state.jobs] })),
@@ -63,6 +83,13 @@ export const useStore = create<AppState>()(
         })),
       setStories: (stories) => set({ stories }),
       addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
+      setDiscoveredJobs: (jobs) => set({ discoveredJobs: jobs }),
+      markDiscoveredJobAsSeen: (id) =>
+        set((state) => ({
+          discoveredJobs: state.discoveredJobs.map((j) =>
+            j.id === id ? { ...j, isSeen: true } : j
+          ),
+        })),
     }),
     {
       name: 'verajobs-storage',

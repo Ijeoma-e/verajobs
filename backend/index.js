@@ -249,4 +249,66 @@ app.post('/api/match-stories', async (req, res) => {
   }
 });
 
+// 5. Discovery Agent (Autonomous Search)
+app.post('/api/agent/discover', async (req, res) => {
+  const { preferences, userCV, existingJobUrls = [] } = req.body;
+  console.log("--- Discovery Agent Start ---");
+  
+  try {
+    // 1. Generate Search Queries based on preferences
+    const queryPrompt = `
+      Based on these career preferences: "${preferences}", 
+      generate 3 highly specific Google search queries to find job postings on Greenhouse, Lever, or Ashby.
+      Example: site:lever.co "Senior AI Engineer" "Remote"
+      Return ONLY a JSON array of strings: ["query1", "query2", "query3"]
+    `;
+    const queryResult = await model.generateContent(queryPrompt);
+    const queries = extractJSON(queryResult.response.text());
+    console.log("Generated Queries:", queries);
+
+    // 2. Simulate Discovery (In a real app, this would use a Search API like Serper or Scraper)
+    // For this prototype, we'll simulate finding 3 relevant URLs for the queries
+    const discoveredUrls = [
+      "https://jobs.lever.co/example/1",
+      "https://boards.greenhouse.io/example/2",
+      "https://jobs.ashbyhq.com/example/3"
+    ].filter(url => !existingJobUrls.includes(url));
+
+    // 3. Evaluate each discovered job (Mocking the results for speed in this demo)
+    // In production, this would call scrapeJob(url) and evaluateJob logic for each
+    const results = [
+      {
+        id: Math.random().toString(36).substring(7),
+        company: "Vercel",
+        title: "Senior Frontend Engineer",
+        url: "https://jobs.lever.co/vercel/1",
+        score: "A",
+        reason: "Perfect match for your React expertise and desire for remote work.",
+        isSeen: false,
+        createdAt: Date.now()
+      },
+      {
+        id: Math.random().toString(36).substring(7),
+        company: "Anthropic",
+        title: "AI Safety Researcher",
+        url: "https://jobs.lever.co/anthropic/2",
+        score: "B",
+        reason: "Strong fit for your Python skills, though requires relocation to SF.",
+        isSeen: false,
+        createdAt: Date.now()
+      }
+    ];
+
+    res.json({ 
+      queries,
+      discoveredJobs: results,
+      message: `Vera scanned ${queries.length} targets and found ${results.length} high-fit roles.`
+    });
+
+  } catch (error) {
+    console.error("Discovery Agent Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
