@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Dimensions, ActivityIndicator, Platform, Switch } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { extractTextFromPDF } from '@/services/api';
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +20,30 @@ export default function ProfileScreen() {
   const [isAutonomous, setIsAutonomous] = useState(user?.aiSettings?.isAutonomous || false);
   const [autoTailor, setAutoTailor] = useState(user?.aiSettings?.autoTailor || false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUploadCV = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      });
+
+      if (!result.canceled) {
+        setUploading(true);
+        const file = result.assets[0];
+        
+        // Extract text from file using Vera's AI powers
+        const text = await extractTextFromPDF(file.uri, file.name, file.mimeType || 'application/pdf');
+        setCv(text);
+        Platform.OS === 'web' ? alert('Aura Scanned: CV logic extracted.') : Alert.alert('Aura Scanned', 'Vera has successfully extracted your career baseline.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Upload Error', 'Failed to scan CV. Please try pasting the text manually.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -88,6 +114,11 @@ export default function ProfileScreen() {
           <View style={styles.fieldHeader}>
             <MaterialCommunityIcons name="file-document-outline" size={18} color="#6366F1" />
             <Text style={styles.fieldLabel}>Master CV Baseline</Text>
+            <TouchableOpacity style={styles.uploadMiniBtn} onPress={handleUploadCV} disabled={uploading}>
+              {uploading ? <ActivityIndicator size="small" color="#6366F1" /> : (
+                <MaterialCommunityIcons name="upload" size={16} color="#6366F1" />
+              )}
+            </TouchableOpacity>
           </View>
           <View style={styles.auraTextAreaBox}>
             <TextInput
@@ -177,8 +208,9 @@ const styles = StyleSheet.create({
   inputContainer: { gap: 24 },
   auraField: { backgroundColor: 'transparent' },
   fieldHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  fieldLabel: { fontSize: 13, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8 },
-  auraInput: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, fontSize: 16, color: '#0F172A', borderWeight: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  fieldLabel: { fontSize: 13, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8, flex: 1 },
+  uploadMiniBtn: { padding: 8, backgroundColor: '#F3F5FF', borderRadius: 10, borderWidth: 1, borderColor: '#EEF2FF' },
+  auraInput: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, fontSize: 16, color: '#0F172A', borderWidth: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   auraTextAreaBox: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, borderWidth: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   auraTextArea: { height: 250, fontSize: 15, color: '#0F172A', lineHeight: 22 },
   listTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A' },

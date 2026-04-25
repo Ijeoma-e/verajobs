@@ -318,4 +318,35 @@ app.post('/api/agent/discover', async (req, res) => {
   }
 });
 
+// 6. CV Extraction (Multimodal)
+app.post('/api/extract-cv', upload.single('file'), async (req, res) => {
+  console.log("--- CV Extraction Start ---");
+  
+  if (!req.file) {
+    return res.status(400).json({ error: "No file provided." });
+  }
+
+  try {
+    const prompt = "Please extract the full professional content from this document. Maintain the structure of experience, skills, and contact info. Return only the extracted text.";
+    
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: req.file.mimetype,
+          data: req.file.buffer.toString('base64')
+        }
+      },
+      { text: prompt }
+    ]);
+
+    const response = await result.response;
+    const text = response.text();
+    
+    res.json({ text });
+  } catch (error) {
+    console.error("CV Extraction Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

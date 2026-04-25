@@ -92,4 +92,22 @@ export const discoverJobs = async (preferences: string, userCV: string, existing
   return postJSON('/api/agent/discover', { preferences, userCV, existingUrls });
 };
 
-export default { evaluateJob, getTailoredCV, askAssistant, matchStories, discoverJobs };
+export const extractTextFromPDF = async (uri: string, name: string, type: string) => {
+  const formData = new FormData();
+  // @ts-ignore
+  formData.append('file', { uri, name, type });
+
+  const response = await fetch(`${BACKEND_URL}/api/extract-cv`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Server responded with ${response.status}`);
+  }
+  const result = await response.json();
+  return result.text;
+};
+
+export default { evaluateJob, getTailoredCV, askAssistant, matchStories, discoverJobs, extractTextFromPDF };

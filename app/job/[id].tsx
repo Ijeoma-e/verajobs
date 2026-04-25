@@ -43,8 +43,70 @@ export default function JobDetailScreen() {
     }
     setLoading(true);
     try {
-      const tailoredData = await getTailoredCV(job.description, user.baseCV);
-      const html = `<html>...</html>`; // Simplification for context
+      const tailored = await getTailoredCV(job.description, user.baseCV);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'DM Sans', sans-serif; padding: 40px; color: #1a1a1a; line-height: 1.5; }
+              .header { border-bottom: 2px solid #6366F1; padding-bottom: 20px; margin-bottom: 30px; }
+              .name { font-size: 32px; font-weight: 700; color: #000; margin: 0; }
+              .contact { color: #666; font-size: 14px; margin-top: 5px; }
+              .section { margin-bottom: 25px; }
+              .section-title { font-size: 14px; font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
+              .summary { font-size: 15px; margin-bottom: 20px; }
+              .exp-item { margin-bottom: 20px; }
+              .exp-header { display: flex; justify-content: space-between; font-weight: 700; }
+              .exp-company { color: #444; }
+              .exp-duration { color: #888; font-size: 13px; }
+              .exp-role { font-weight: 700; font-size: 16px; margin: 4px 0; }
+              .bullets { margin-top: 8px; padding-left: 20px; }
+              .bullet { margin-bottom: 5px; font-size: 14px; }
+              .skills { display: flex; flex-wrap: wrap; gap: 8px; }
+              .skill-tag { background: #f0f2ff; color: #6366F1; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1 class="name">${tailored.personal_info.name}</h1>
+              <div class="contact">${tailored.personal_info.email} | ${tailored.personal_info.phone}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Professional Summary</div>
+              <div class="summary">${tailored.summary}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">Experience</div>
+              ${tailored.experience.map((exp: any) => `
+                <div class="exp-item">
+                  <div class="exp-header">
+                    <span class="exp-role">${exp.role}</span>
+                    <span class="exp-duration">${exp.duration}</span>
+                  </div>
+                  <div class="exp-company">${exp.company}</div>
+                  <ul class="bullets">
+                    ${exp.bullets.map((b: string) => `<li class="bullet">${b}</li>`).join('')}
+                  </ul>
+                </div>
+              `).join('')}
+            </div>
+
+            <div class="section">
+              <div class="section-title">Technical Skills</div>
+              <div class="skills">
+                ${tailored.skills.map((s: string) => `<span class="skill-tag">${s}</span>`).join('')}
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+      
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
     } catch (error) {
