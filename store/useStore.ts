@@ -61,6 +61,7 @@ interface AppState {
   setJobs: (jobs: Job[]) => void;
   addJob: (job: Job) => void;
   updateJob: (id: string, updates: Partial<Job>) => void;
+  removeJob: (id: string) => void;
   setStories: (stories: Story[]) => void;
   addStory: (story: Story) => void;
   setDiscoveredJobs: (jobs: DiscoveredJob[]) => void;
@@ -80,6 +81,10 @@ export const useStore = create<AppState>()(
       updateJob: (id, updates) =>
         set((state) => ({
           jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...updates } : j)),
+        })),
+      removeJob: (id) =>
+        set((state) => ({
+          jobs: state.jobs.filter((j) => j.id !== id),
         })),
       setStories: (stories) => set({ stories }),
       addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),

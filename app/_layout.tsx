@@ -55,9 +55,15 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{
+        headerTitleStyle: { fontWeight: '900', color: '#0F172A' },
+        headerTintColor: '#6366F1',
+        headerBackTitle: 'Back'
+      }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Add Job' }} />
+        <Stack.Screen name="job/[id]" options={{ title: 'Aura Analysis' }} />
+        <Stack.Screen name="job/prep/[id]" options={{ title: 'Interview Prep' }} />
       </Stack>
     </ThemeProvider>
   );

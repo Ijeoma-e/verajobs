@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Dimensions, TextInput, Modal, Platform } from 'react-native';
 import { Text, View } from '@/components/Themed';
-import { useLocalSearchParams, Link } from 'expo-router';
+import { useLocalSearchParams, Link, useRouter } from 'expo-router';
 import { useStore } from '@/store/useStore';
-import { getTailoredCV } from '@/services/api';
+import { getTailoredCV, evaluateJob } from '@/services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import * as Print from 'expo-print';
@@ -15,9 +15,11 @@ const STATUSES = ['evaluating', 'applied', 'interviewing', 'offered', 'rejected'
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { jobs, user, updateJob } = useStore();
+  const router = useRouter();
+  const { jobs, user, updateJob, removeJob } = useStore();
   const job = jobs.find((j) => j.id === id);
   const [loading, setLoading] = useState(false);
+  const [reevaluating, setReevaluating] = useState(false);
   const [notes, setNotes] = useState(job?.notes || '');
   const [showStatusModal, setShowStatusModal] = useState(false);
 
@@ -34,6 +36,45 @@ export default function JobDetailScreen() {
   const handleSaveNotes = () => {
     updateJob(job.id, { notes });
     if (Platform.OS === 'web') alert('Notes Saved');
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Pipeline',
+      'Are you sure you want to remove this job from your pipeline?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => {
+            removeJob(job.id);
+            router.back();
+          } 
+        }
+      ]
+    );
+  };
+
+  const handleReevaluate = async () => {
+    if (!user?.baseCV) {
+      Alert.alert('Aura Missing', 'Complete your profile first.');
+      return;
+    }
+    setReevaluating(true);
+    try {
+      const result = await evaluateJob(job.url, user.baseCV, user.preferences);
+      updateJob(job.id, {
+        score: result.evaluation.score,
+        evaluation: result.evaluation
+      });
+      Platform.OS === 'web' ? alert('Aura Refined: Job re-evaluated.') : Alert.alert('Aura Refined', 'Job fit score updated with your latest profile.');
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Re-evaluation Failed', 'Could not refresh the fit score.');
+    } finally {
+      setReevaluating(false);
+    }
   };
 
   const handleTailorCV = async () => {
@@ -128,9 +169,13 @@ export default function JobDetailScreen() {
             <Text style={styles.logoText}>{job.company.charAt(0)}</Text>
           </View>
           <View style={styles.auraScoreArea}>
-             <LinearGradient colors={getScoreColors(job.score)} style={styles.auraScoreBadge}>
-                <Text style={styles.auraScoreValue}>{job.score}</Text>
-             </LinearGradient>
+             <TouchableOpacity onPress={handleReevaluate} disabled={reevaluating}>
+               <LinearGradient colors={getScoreColors(job.score)} style={styles.auraScoreBadge}>
+                  {reevaluating ? <ActivityIndicator size="small" color="#fff" /> : (
+                    <Text style={styles.auraScoreValue}>{job.score}</Text>
+                  )}
+               </LinearGradient>
+             </TouchableOpacity>
              <Text style={styles.auraScoreLabel}>Fit Score</Text>
           </View>
         </View>
@@ -171,7 +216,8 @@ export default function JobDetailScreen() {
          <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="auto-fix" size={18} color="#6366F1" />
             <Text style={styles.sectionTitle}>Aura Analysis</Text>
-         </View>         <View style={styles.analysisCard}>
+         </View>
+         <View style={styles.analysisCard}>
             <Text style={styles.analysisText}>{job.evaluation.fit_summary}</Text>
          </View>
       </View>
@@ -210,6 +256,11 @@ export default function JobDetailScreen() {
             />
          </View>
       </View>
+
+      <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+        <MaterialCommunityIcons name="trash-can-outline" size={18} color="#EF4444" />
+        <Text style={styles.deleteBtnText}>Delete Pipeline</Text>
+      </TouchableOpacity>
 
       <View style={{ height: 60 }} />
 
@@ -297,4 +348,6 @@ const styles = StyleSheet.create({
   modalOptionActive: { backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#6366F1' },
   modalOptionText: { fontSize: 14, fontWeight: '800', color: '#64748B' },
   modalOptionTextActive: { color: '#6366F1' },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 40, padding: 15, borderRadius: 20, backgroundColor: 'rgba(239, 68, 68, 0.05)', borderWeight: 1, borderColor: 'rgba(239, 68, 68, 0.1)', gap: 8 },
+  deleteBtnText: { color: '#EF4444', fontSize: 15, fontWeight: '800' },
 });
