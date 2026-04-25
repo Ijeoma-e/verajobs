@@ -20,13 +20,15 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 // Check for API Key on startup
 if (!process.env.GEMINI_API_KEY) {
   console.error(
     "CRITICAL: GEMINI_API_KEY is not set in environment variables.",
   );
+} else {
+  console.log("Gemini API Key detected, using model: gemini-1.5-flash");
 }
 
 // --- Helper: Scraper ---
@@ -144,11 +146,9 @@ app.post("/api/evaluate", async (req, res) => {
     const jobData = await scrapeJob(url);
 
     if (!jobData.description || jobData.description.length < 50) {
-      return res
-        .status(400)
-        .json({
-          error: "Could not extract job description from the provided URL.",
-        });
+      return res.status(400).json({
+        error: "Could not extract job description from the provided URL.",
+      });
     }
 
     const prompt = `Evaluate this job against CV: ${userCV} and Prefs: ${preferences}. Job: ${jobData.description}. Return ONLY JSON: { "score": "A|B|C|D", "fit_summary": "...", "green_flags": [], "red_flags": [], "compensation_estimate": "...", "action_plan": "..." }`;
@@ -161,13 +161,10 @@ app.post("/api/evaluate", async (req, res) => {
     });
   } catch (error) {
     console.error("API Evaluate Error:", error.message);
-    res
-      .status(500)
-      .json({
-        error:
-          error.message ||
-          "An unexpected error occurred during job evaluation.",
-      });
+    res.status(500).json({
+      error:
+        error.message || "An unexpected error occurred during job evaluation.",
+    });
   }
 });
 
@@ -180,12 +177,10 @@ app.post("/api/tailor", async (req, res) => {
     res.json(extractJSON(text));
   } catch (error) {
     console.error("API Tailor Error:", error.message);
-    res
-      .status(500)
-      .json({
-        error:
-          error.message || "An unexpected error occurred during CV tailoring.",
-      });
+    res.status(500).json({
+      error:
+        error.message || "An unexpected error occurred during CV tailoring.",
+    });
   }
 });
 
@@ -285,13 +280,10 @@ app.post("/api/match-stories", async (req, res) => {
     res.json(extractJSON(text));
   } catch (error) {
     console.error("API Match Stories Error:", error.message);
-    res
-      .status(500)
-      .json({
-        error:
-          error.message ||
-          "An unexpected error occurred during story matching.",
-      });
+    res.status(500).json({
+      error:
+        error.message || "An unexpected error occurred during story matching.",
+    });
   }
 });
 
