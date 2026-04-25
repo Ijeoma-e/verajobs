@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 
 const { width } = Dimensions.get('window');
 
@@ -149,7 +150,25 @@ export default function JobDetailScreen() {
       `;
       
       const { uri } = await Print.printToFileAsync({ html });
-      await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+      
+      // Construct a professional filename: [Full-Name]-[jobrole]-[company]-resume.pdf
+      const cleanName = (user.name || 'User').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const cleanTitle = job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const cleanCompany = job.company.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const filename = `${cleanName}-${cleanTitle}-${cleanCompany}-resume.pdf`;
+      const newUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      // Move the random-named file to our professionally named file in cache
+      await FileSystem.moveAsync({
+        from: uri,
+        to: newUri,
+      });
+
+      await Sharing.shareAsync(newUri, { 
+        UTI: '.pdf', 
+        mimeType: 'application/pdf',
+        dialogTitle: `Share ${filename}`
+      });
     } catch (error) {
       console.error(error);
       Alert.alert('Aura Error', 'Failed to generate tailored CV.');
