@@ -98,7 +98,7 @@ export default function AssistantScreen() {
           <View key={msg.id} style={[styles.messageWrapper, msg.sender === 'user' ? styles.userWrapper : styles.aiWrapper]}>
             {msg.sender === 'ai' && (
               <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiAvatar}>
-                <MaterialCommunityIcons name="sparkles" size={16} color="#fff" />
+                <MaterialCommunityIcons name="star-four-points" size={16} color="#fff" />
               </LinearGradient>
             )}
             <View style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.aiBubble]}>

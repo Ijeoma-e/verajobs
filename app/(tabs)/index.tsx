@@ -89,7 +89,7 @@ export default function PipelineScreen() {
       {filteredJobs.length === 0 ? (
         <View style={styles.emptyContainer}>
           <LinearGradient colors={['#FFFFFF', '#F9FAFF']} style={styles.emptyAura}>
-            <MaterialCommunityIcons name="sparkles" size={64} color="#6366F1" opacity={0.3} />
+            <MaterialCommunityIcons name="star-four-points" size={64} color="#6366F1" />
             <Text style={styles.emptyText}>Find your next aura job</Text>
             <Link href="/modal" asChild>
               <TouchableOpacity style={styles.emptyAddButton}>

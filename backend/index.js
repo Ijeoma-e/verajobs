@@ -5,7 +5,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cheerio = require('cheerio');
 const axios = require('axios');
 const multer = require('multer');
-const upload = multer();
+const upload = multer(); // Middleware for handling file uploads
 
 dotenv.config();
 
@@ -55,7 +55,10 @@ app.post('/api/evaluate', async (req, res) => {
     const result = await model.generateContent(prompt);
     const jsonString = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     res.json({ ...jobData, evaluation: JSON.parse(jsonString) });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("API Evaluate Error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
 app.post('/api/tailor', async (req, res) => {
@@ -65,7 +68,73 @@ app.post('/api/tailor', async (req, res) => {
     const result = await model.generateContent(prompt);
     const jsonString = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     res.json(JSON.parse(jsonString));
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("API Tailor Error:", error);
+    res.status(500).json({ error: error.message }); 
+  }
+});
+
+// 3. Assistant (Chat/Voice)
+app.post('/api/assistant', upload.single('audio'), async (req, res) => {
+  const { message, userProfile, preferences } = req.body;
+  try {
+    const parts = [];
+    
+    if (req.file) {
+      parts.push({
+        inlineData: {
+          mimeType: req.file.mimetype,
+          data: req.file.buffer.toString('base64')
+        }
+      });
+      // Corrected typo and clarified prompt for audio
+      parts.push({ text: "Please transcribe the audio above and treat it as the user's primary message." });
+    } else if (message) {
+      parts.push({ text: message });
+    } else {
+      return res.status(400).json({ error: "Either text message or audio file must be provided." });
+    }
+
+    const prompt = `
+      You are "Vera," a pro-active career search agent. 
+      Context: User wants roles like ${preferences}. 
+      Task: Analyze the user's message (text or audio).
+      
+      Intent Detection:
+      - "SEARCH": Find new jobs. Provide a specific search query for Google/LinkedIn.
+      - "VISA": Specifically looking for sponsorship/relocation.
+      - "EVALUATE": Wants to check a specific role.
+      
+      Special Mandate: If the user mentions "Visa" or "Sponsorship," ensure the search_query includes terms like 'visa sponsorship' or 'H1B'.
+
+      Return ONLY JSON: { "intent": "SEARCH|VISA|CHAT", "response_text": "...", "search_query": "...", "suggested_companies": [{name, reason, strength}], "suggested_actions": [] }
+    `;
+    // Gemini multimodal API expects an array of parts for content
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: parts }],
+    });
+    const responseText = await result.response.text();
+    const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+    
+    res.json(JSON.parse(jsonString));
+  } catch (error) {
+    console.Get a clearer log for debugging:
+    console.error("API Assistant Error:", error.message); // Log only the message for brevity
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error("Error Data:", error.response.data);
+      console.error("Error Status:", error.response.status);
+      console.error("Error Headers:", error.response.headers);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("Error Request:", error.request);
+    } else {
+      // Something set up in the app that triggered an Error
+      console.error("Error Message:", error.message);
+    }
+    res.status(500).json({ error: error.message || "An unexpected error occurred on the server." }); 
+  }
 });
 
 // 4. Match Stories for Interview Prep
@@ -84,42 +153,11 @@ app.post('/api/match-stories', async (req, res) => {
     const result = await model.generateContent(prompt);
     const jsonString = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
     res.json(JSON.parse(jsonString));
-  } catch (error) { res.status(500).json({ error: error.message }); }
+  } catch (error) { 
+    console.error("API Match Stories Error:", error.message);
+    res.status(500).json({ error: error.message }); 
+  }
 });
 
-app.post('/api/assistant', upload.single('audio'), async (req, res) => {
-  const { message, userProfile, preferences } = req.body;
-  try {
-    const parts = [];
-    if (req.file) {
-      parts.push({ inlineData: { mimeType: req.file.mimetype, data: req.file.buffer.toString('base64') } });
-      parts.push({ text: "Transcribe and analyze this audio." });
-    } else {
-      parts.push({ text: message });
-    }
 
-    const prompt = `
-      You are "Vera," a career search agent. 
-      Context: ${preferences}. 
-      
-      If the user wants to "find" or "discover" jobs:
-      1. Provide a "Discovery Action Plan".
-      2. List 5 top-tier companies currently hiring for this role with visa sponsorship (based on your knowledge).
-      3. Generate a "Smart Search URL" for Google Jobs/LinkedIn.
-
-      Return JSON: { 
-        "intent": "SEARCH|VISA|CHAT", 
-        "response_text": "...", 
-        "search_query": "...",
-        "suggested_companies": [{name, reason, strength}],
-        "suggested_actions": [] 
-      }
-    `;
-    parts.push({ text: prompt });
-    const result = await model.generateContent(parts);
-    const jsonString = result.response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-    res.json(JSON.parse(jsonString));
-  } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Backend running on port \${PORT}`));
