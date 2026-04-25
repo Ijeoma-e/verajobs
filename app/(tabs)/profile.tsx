@@ -40,13 +40,19 @@ export default function ProfileScreen() {
   const [selectedProvider, setSelectedProvider] = useState(
     user?.aiSettings?.provider || "gemini",
   );
+  const [selectedModel, setSelectedModel] = useState(
+    user?.aiSettings?.model || "gemini-1.5-flash",
+  );
   const [availableProviders, setAvailableProviders] = useState<
     Record<string, boolean>
   >({});
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loadingProviders, setLoadingProviders] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [providerError, setProviderError] = useState("");
+  const [modelError, setModelError] = useState("");
 
   // Fetch available providers on mount
   useEffect(() => {
@@ -57,6 +63,8 @@ export default function ProfileScreen() {
         setSelectedProvider(data.current || "gemini");
         setAvailableProviders(data.available || {});
         setProviderError("");
+        // Also fetch models for the current provider
+        await fetchModelsForProvider(data.current || "gemini");
       } catch (error: any) {
         console.error("Error fetching providers:", error);
         setProviderError(error.message);
@@ -68,11 +76,30 @@ export default function ProfileScreen() {
     fetchProviders();
   }, []);
 
+  // Fetch models when provider changes
+  const fetchModelsForProvider = async (provider: string) => {
+    try {
+      setLoadingModels(true);
+      const data = await getAvailableModels(provider);
+      setAvailableModels(data.models || []);
+      setSelectedModel(data.current || "gemini-1.5-flash");
+      setModelError("");
+    } catch (error: any) {
+      console.error("Error fetching models:", error);
+      setModelError(error.message);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
   const handleProviderSwitch = async (newProvider: string) => {
     try {
       setSelectedProvider(newProvider);
       const result = await switchAIProvider(newProvider);
       Alert.alert("Success", `Switched to ${newProvider} provider`);
+
+      // Fetch models for the new provider
+      await fetchModelsForProvider(newProvider);
 
       // Update user store with new provider
       const updatedProfile = {
@@ -88,6 +115,29 @@ export default function ProfileScreen() {
       Alert.alert("Error", `Failed to switch provider: ${error.message}`);
       // Revert selection
       setSelectedProvider(user?.aiSettings?.provider || "gemini");
+    }
+  };
+
+  const handleModelSwitch = async (newModel: string) => {
+    try {
+      setSelectedModel(newModel);
+      const result = await switchAIModel(newModel);
+      Alert.alert("Success", `Switched to ${newModel} model`);
+
+      // Update user store with new model
+      const updatedProfile = {
+        ...user,
+        aiSettings: {
+          ...user?.aiSettings,
+          model: newModel,
+        },
+      };
+      setUser(updatedProfile);
+    } catch (error: any) {
+      console.error("Error switching model:", error);
+      Alert.alert("Error", `Failed to switch model: ${error.message}`);
+      // Revert selection
+      setSelectedModel(user?.aiSettings?.model || "gemini-1.5-flash");
     }
   };
 
@@ -137,6 +187,7 @@ export default function ProfileScreen() {
       setIsAutonomous(user.aiSettings?.isAutonomous || false);
       setAutoTailor(user.aiSettings?.autoTailor || false);
       setSelectedProvider(user.aiSettings?.provider || "gemini");
+      setSelectedModel(user.aiSettings?.model || "gemini-1.5-flash");
     }
   }, [user]);
 
@@ -153,6 +204,7 @@ export default function ProfileScreen() {
         scanFrequency: "daily",
         autoTailor,
         provider: selectedProvider,
+        model: selectedModel,
       },
     };
 
@@ -322,7 +374,7 @@ export default function ProfileScreen() {
         <View style={styles.auraField}>
           <View style={styles.fieldHeader}>
             <MaterialCommunityIcons name="brain" size={18} color="#6366F1" />
-            <Text style={styles.fieldLabel}>AI Model</Text>
+            <Text style={styles.fieldLabel}>AI Provider</Text>
           </View>
           {loadingProviders ? (
             <View
@@ -392,7 +444,7 @@ export default function ProfileScreen() {
                               {provider === "gemini"
                                 ? "Google Gemini"
                                 : provider === "zai"
-                                  ? "Z.AI (GLM-4-Flash)"
+                                  ? "Z.AI"
                                   : "OpenRouter"}
                             </Text>
                             <Text style={styles.providerDesc}>
@@ -422,6 +474,92 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* AI Model Settings */}
+        {selectedProvider && (
+          <View style={styles.auraField}>
+            <View style={styles.fieldHeader}>
+              <MaterialCommunityIcons name="memory" size={18} color="#6366F1" />
+              <Text style={styles.fieldLabel}>AI Model</Text>
+            </View>
+            {loadingModels ? (
+              <View
+                style={[
+                  styles.auraTextAreaBox,
+                  { justifyContent: "center", alignItems: "center", padding: 24 },
+                ]}
+              >
+                <ActivityIndicator size="large" color="#6366F1" />
+                <Text style={{ marginTop: 12, color: "#64748B" }}>
+                  Loading models...
+                </Text>
+              </View>
+            ) : modelError ? (
+              <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
+                <Text
+                  style={{ color: "#EF4444", fontSize: 14, fontWeight: "600" }}
+                >
+                  {modelError}
+                </Text>
+              </View>
+            ) : availableModels.length === 0 ? (
+              <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
+                <Text
+                  style={{ color: "#64748B", fontWeight: "500" }}
+                >
+                  No models available for {selectedProvider}.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.auraTextAreaBox}>
+                {availableModels.map((model, index) => (
+                  <React.Fragment key={model.id}>
+                    <TouchableOpacity
+                      style={[
+                        styles.modelOption,
+                        selectedModel === model.id &&
+                          styles.modelOptionSelected,
+                      ]}
+                      onPress={() => handleModelSwitch(model.id)}
+                    >
+                      <View style={styles.modelOptionContent}>
+                        <View style={styles.modelInfo}>
+                          <Text
+                            style={[
+                              styles.modelName,
+                              selectedModel === model.id &&
+                                styles.modelNameSelected,
+                            ]}
+                          >
+                            {model.name}
+                          </Text>
+                          <View style={styles.modelMeta}>
+                            <Text style={styles.modelSpeed}>
+                              {model.speed}
+                            </Text>
+                            <Text style={styles.modelType}>
+                              • {model.type}
+                            </Text>
+                          </View>
+                        </View>
+                        {selectedModel === model.id && (
+                          <MaterialCommunityIcons
+                            name="check-circle"
+                            size={24}
+                            color="#6366F1"
+                          />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                    {index < availableModels.length - 1 && (
+                      <View style={styles.cardDivider} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.saveBtn}
@@ -575,5 +713,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#94A3B8",
     marginTop: 2,
+  },
+  modelOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginVertical: 4,
+  },
+  modelOptionSelected: {
+    backgroundColor: "#F3F5FF",
+  },
+  modelOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  modelInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  modelName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  modelNameSelected: {
+    color: "#6366F1",
+  },
+  modelMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  modelSpeed: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  modelType: {
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "500",
   },
 });

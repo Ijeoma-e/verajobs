@@ -7,8 +7,12 @@ const multer = require("multer");
 const {
   generateAIResponse,
   setProvider,
+  setModel,
   getProvider,
+  getModel,
   getAvailableProviders,
+  getModelsForProvider,
+  availableModels,
 } = require("./ai-providers");
 
 const upload = multer();
@@ -325,6 +329,63 @@ app.get("/api/settings/providers-info", (req, res) => {
         link: "https://openrouter.ai",
       },
     },
+  });
+});
+
+// --- Model Management ---
+
+// Get available models for a specific provider
+app.get("/api/settings/models", (req, res) => {
+  const { provider } = req.query;
+
+  try {
+    if (!provider) {
+      // Return all models organized by provider
+      res.json({
+        models: availableModels,
+        current: {
+          provider: getProvider(),
+          model: getModel(),
+        },
+      });
+    } else {
+      // Return models for a specific provider
+      const models = getModelsForProvider(provider);
+      if (!models || models.length === 0) {
+        return res.status(400).json({ error: `Unknown provider: ${provider}` });
+      }
+      res.json({
+        provider,
+        models,
+        current: getProvider() === provider ? getModel() : null,
+      });
+    }
+  } catch (error) {
+    console.error("Settings Error:", error.message);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Switch AI model for current provider
+app.post("/api/settings/model", (req, res) => {
+  const { model } = req.body;
+  try {
+    if (!model) {
+      return res.status(400).json({ error: "Model ID is required" });
+    }
+    const result = setModel(model);
+    res.json(result);
+  } catch (error) {
+    console.error("Settings Error:", error.message);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get current model and provider
+app.get("/api/settings/current", (req, res) => {
+  res.json({
+    provider: getProvider(),
+    model: getModel(),
   });
 });
 

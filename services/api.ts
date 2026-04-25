@@ -179,6 +179,53 @@ export const getProvidersInfo = async () => {
   }
 };
 
+// --- AI Model Settings ---
+export const getAvailableModels = async (provider?: string) => {
+  try {
+    const url = provider
+      ? `${BACKEND_URL}/api/settings/models?provider=${provider}`
+      : `${BACKEND_URL}/api/settings/models`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+    return response.json();
+  } catch (error: any) {
+    console.error("Failed to fetch models:", error);
+    throw new Error(`Failed to fetch models: ${error.message}`);
+  }
+};
+
+export const switchAIModel = async (model: string) => {
+  return postJSON("/api/settings/model", { model });
+};
+
+export const getCurrentSettings = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/settings/current`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+    return response.json();
+  } catch (error: any) {
+    console.error("Failed to fetch current settings:", error);
+    throw new Error(`Failed to fetch current settings: ${error.message}`);
+  }
+};
+
 export default {
   evaluateJob,
   getTailoredCV,
@@ -189,4 +236,7 @@ export default {
   getCurrentProvider,
   switchAIProvider,
   getProvidersInfo,
+  getAvailableModels,
+  switchAIModel,
+  getCurrentSettings,
 };
