@@ -33,22 +33,27 @@ export const askAssistant = async (message: string | null, audioUri: string | nu
   
   if (message) formData.append('message', message);
   if (preferences) formData.append('preferences', preferences);
-  if (userProfile) formData.append('userProfile', JSON.stringify(userProfile));
+  if (userProfile) formData.append('userProfile', typeof userProfile === 'string' ? userProfile : JSON.stringify(userProfile));
   
   if (audioUri) {
-    const filename = audioUri.split('/').pop();
-    const match = /\.(\w+)$/.exec(filename || '');
+    const filename = audioUri.split('/').pop() || 'recording.m4a';
+    const match = /\.(\w+)$/.exec(filename);
     const type = match ? `audio/${match[1]}` : `audio/m4a`;
     
-    // @ts-ignore
-    formData.append('audio', {
+    // In React Native, this is the standard way to append a file to FormData
+    const audioFile = {
       uri: audioUri,
       name: filename,
       type: type,
-    });
+    } as any;
+    
+    formData.append('audio', audioFile);
   }
 
-  const response = await api.post('/api/assistant', formData);
+  // Use a lower-level fetch or ensure axios handles this correctly without explicit headers
+  const response = await api.post('/api/assistant', formData, {
+    transformRequest: (data) => data, // Prevent axios from trying to serialize FormData
+  });
   return response.data;
 };
 
