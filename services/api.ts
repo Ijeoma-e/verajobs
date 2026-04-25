@@ -1,11 +1,14 @@
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
 const getBackendUrl = () => {
-  let url = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-  
+  let url = process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
   // Android emulator fallback
-  if (Platform.OS === 'android' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
-    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  if (
+    Platform.OS === "android" &&
+    (url.includes("localhost") || url.includes("127.0.0.1"))
+  ) {
+    url = url.replace("localhost", "10.0.2.2").replace("127.0.0.1", "10.0.2.2");
   }
   return url;
 };
@@ -17,18 +20,18 @@ console.log("Using BACKEND_URL:", BACKEND_URL);
 const postJSON = async (endpoint: string, data: any) => {
   try {
     const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const msg = errorData.details 
-        ? `${errorData.error}: ${errorData.details}` 
-        : (errorData.error || `Server responded with ${response.status}`);
+      const msg = errorData.details
+        ? `${errorData.error}: ${errorData.details}`
+        : errorData.error || `Server responded with ${response.status}`;
       throw new Error(msg);
     }
     return response.json();
@@ -38,32 +41,44 @@ const postJSON = async (endpoint: string, data: any) => {
   }
 };
 
-export const evaluateJob = async (url: string, userCV: string, preferences: string) => {
-  return postJSON('/api/evaluate', { url, userCV, preferences });
+export const evaluateJob = async (
+  url: string,
+  userCV: string,
+  preferences: string,
+) => {
+  return postJSON("/api/evaluate", { url, userCV, preferences });
 };
 
 export const getTailoredCV = async (jobDescription: string, userCV: string) => {
-  return postJSON('/api/tailor', { jobDescription, userCV });
+  return postJSON("/api/tailor", { jobDescription, userCV });
 };
 
-export const askAssistant = async (message: string | null, audioUri: string | null, userProfile: any, preferences: string) => {
+export const askAssistant = async (
+  message: string | null,
+  audioUri: string | null,
+  userProfile: any,
+  preferences: string,
+) => {
   const formData = new FormData();
-  
-  if (message) formData.append('message', message);
-  if (preferences) formData.append('preferences', preferences);
-  
+
+  if (message) formData.append("message", message);
+  if (preferences) formData.append("preferences", preferences);
+
   if (userProfile) {
-    const profileStr = typeof userProfile === 'object' ? JSON.stringify(userProfile) : userProfile;
-    formData.append('userProfile', profileStr);
+    const profileStr =
+      typeof userProfile === "object"
+        ? JSON.stringify(userProfile)
+        : userProfile;
+    formData.append("userProfile", profileStr);
   }
-  
+
   if (audioUri) {
-    const filename = audioUri.split('/').pop() || 'recording.m4a';
+    const filename = audioUri.split("/").pop() || "recording.m4a";
     const match = /\.(\w+)$/.exec(filename);
     const type = match ? `audio/${match[1]}` : `audio/m4a`;
-    
+
     // @ts-ignore
-    formData.append('audio', {
+    formData.append("audio", {
       uri: audioUri,
       name: filename,
       type: type,
@@ -71,43 +86,107 @@ export const askAssistant = async (message: string | null, audioUri: string | nu
   }
 
   const response = await fetch(`${BACKEND_URL}/api/assistant`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    const msg = errorData.details 
-      ? `${errorData.error}: ${errorData.details}` 
-      : (errorData.error || `Server responded with ${response.status}`);
+    const msg = errorData.details
+      ? `${errorData.error}: ${errorData.details}`
+      : errorData.error || `Server responded with ${response.status}`;
     throw new Error(msg);
-  }  return response.json();
+  }
+  return response.json();
 };
 
 export const matchStories = async (jobDescription: string, stories: any[]) => {
-  return postJSON('/api/match-stories', { jobDescription, stories });
+  return postJSON("/api/match-stories", { jobDescription, stories });
 };
 
-export const discoverJobs = async (preferences: string, userCV: string, existingUrls: string[]) => {
-  return postJSON('/api/agent/discover', { preferences, userCV, existingUrls });
+export const discoverJobs = async (
+  preferences: string,
+  userCV: string,
+  existingUrls: string[],
+) => {
+  return postJSON("/api/agent/discover", { preferences, userCV, existingUrls });
 };
 
-export const extractTextFromPDF = async (uri: string, name: string, type: string) => {
+export const extractTextFromPDF = async (
+  uri: string,
+  name: string,
+  type: string,
+) => {
   const formData = new FormData();
   // @ts-ignore
-  formData.append('file', { uri, name, type });
+  formData.append("file", { uri, name, type });
 
   const response = await fetch(`${BACKEND_URL}/api/extract-cv`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Server responded with ${response.status}`);
+    throw new Error(
+      errorData.error || `Server responded with ${response.status}`,
+    );
   }
   const result = await response.json();
   return result.text;
 };
 
-export default { evaluateJob, getTailoredCV, askAssistant, matchStories, discoverJobs, extractTextFromPDF };
+// --- AI Provider Settings ---
+export const getCurrentProvider = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/settings/provider`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+    return response.json();
+  } catch (error: any) {
+    console.error("Failed to fetch current provider:", error);
+    throw new Error(`Failed to fetch provider settings: ${error.message}`);
+  }
+};
+
+export const switchAIProvider = async (provider: string) => {
+  return postJSON("/api/settings/provider", { provider });
+};
+
+export const getProvidersInfo = async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/settings/providers-info`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+    return response.json();
+  } catch (error: any) {
+    console.error("Failed to fetch providers info:", error);
+    throw new Error(`Failed to fetch providers info: ${error.message}`);
+  }
+};
+
+export default {
+  evaluateJob,
+  getTailoredCV,
+  askAssistant,
+  matchStories,
+  discoverJobs,
+  extractTextFromPDF,
+  getCurrentProvider,
+  switchAIProvider,
+  getProvidersInfo,
+};
