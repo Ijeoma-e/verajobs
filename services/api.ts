@@ -1,6 +1,17 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+const getBackendUrl = () => {
+  let url = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+  
+  // Android emulator uses 10.0.2.2 to access localhost of the host machine
+  if (Platform.OS === 'android' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+    url = url.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2');
+  }
+  return url;
+};
+
+const BACKEND_URL = getBackendUrl();
 
 const api = axios.create({
   baseURL: BACKEND_URL,

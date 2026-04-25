@@ -17,6 +17,7 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const isPreparing = useRef(false);
   const { user } = useStore();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -26,7 +27,7 @@ export default function AssistantScreen() {
     const displayMsg = text || "🎤 [Voice Memo]";
     const userMsg = { id: Date.now(), text: displayMsg, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
-    setInput('');
+    if (!audioUri) setInput('');
     setLoading(true);
 
     try {
@@ -50,13 +51,10 @@ export default function AssistantScreen() {
   };
 
   async function startRecording() {
+    if (isPreparing.current || recording) return;
+    
     try {
-      // Ensure any existing recording is cleared
-      if (recording) {
-        await recording.stopAndUnloadAsync();
-        setRecording(null);
-      }
-
+      isPreparing.current = true;
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status === 'granted') {
         await Audio.setAudioModeAsync({
@@ -72,19 +70,37 @@ export default function AssistantScreen() {
     } catch (err) {
       console.error('Failed to start recording', err);
       setRecording(null);
+    } finally {
+      isPreparing.current = false;
     }
   }
 
   async function stopRecording() {
+    // If it's still preparing, we can't stop it yet. 
+    // This is a race condition when the user taps very quickly.
+    if (isPreparing.current) {
+      // Wait a bit and try again, or just wait for it to finish preparing
+      let checkCount = 0;
+      while (isPreparing.current && checkCount < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        checkCount++;
+      }
+    }
+
     if (!recording) return;
     
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null); // Clear state after stopping
-      
-      if (uri) {
-        handleSend(null, uri);
+      const status = await recording.getStatusAsync();
+      if (status.canRecord) {
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        setRecording(null);
+        
+        if (uri) {
+          handleSend(null, uri);
+        }
+      } else {
+        setRecording(null);
       }
     } catch (err) {
       console.error('Failed to stop recording', err);
