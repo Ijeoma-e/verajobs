@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserProfile {
   id: string;
@@ -18,6 +20,9 @@ interface Job {
   evaluation: any;
   status: 'applied' | 'interviewing' | 'rejected' | 'offered' | 'evaluating';
   createdAt: number;
+  applicationDate?: number;
+  notes?: string;
+  contactPerson?: string;
 }
 
 interface Story {
@@ -43,17 +48,25 @@ interface AppState {
   addStory: (story: Story) => void;
 }
 
-export const useStore = create<AppState>((set) => ({
-  user: null,
-  jobs: [],
-  stories: [],
-  setUser: (user) => set({ user }),
-  setJobs: (jobs) => set({ jobs }),
-  addJob: (job) => set((state) => ({ jobs: [job, ...state.jobs] })),
-  updateJob: (id, updates) =>
-    set((state) => ({
-      jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...updates } : j)),
-    })),
-  setStories: (stories) => set({ stories }),
-  addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
-}));
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      user: null,
+      jobs: [],
+      stories: [],
+      setUser: (user) => set({ user }),
+      setJobs: (jobs) => set({ jobs }),
+      addJob: (job) => set((state) => ({ jobs: [job, ...state.jobs] })),
+      updateJob: (id, updates) =>
+        set((state) => ({
+          jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...updates } : j)),
+        })),
+      setStories: (stories) => set({ stories }),
+      addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
+    }),
+    {
+      name: 'verajobs-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);

@@ -48,10 +48,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="stories"
+        name="assistant"
         options={{
-          title: 'Stories',
-          tabBarIcon: ({ color }) => <TabBarIcon name="book" color={color} />,
+          title: 'Vera',
+          tabBarIcon: ({ color }) => <TabBarIcon name="comment" color={color} />,
         }}
       />
       <Tabs.Screen
