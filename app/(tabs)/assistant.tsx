@@ -42,9 +42,10 @@ export default function AssistantScreen() {
         action: result.search_query ? "Explore Roles" : null
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { id: Date.now() + 2, text: "My apologies, I'm momentarily offline.", sender: 'ai' }]);
+      const errorMsg = error.message || "My apologies, I'm momentarily offline.";
+      setMessages(prev => [...prev, { id: Date.now() + 2, text: `Error: ${errorMsg}`, sender: 'ai' }]);
     } finally {
       setLoading(false);
     }

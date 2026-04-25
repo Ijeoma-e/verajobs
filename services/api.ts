@@ -11,22 +11,31 @@ const getBackendUrl = () => {
 };
 
 const BACKEND_URL = getBackendUrl();
+console.log("Using BACKEND_URL:", BACKEND_URL);
 
 // Helper for standard JSON POST requests
 const postJSON = async (endpoint: string, data: any) => {
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  try {
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Server responded with ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const msg = errorData.details 
+        ? `${errorData.error}: ${errorData.details}` 
+        : (errorData.error || `Server responded with ${response.status}`);
+      throw new Error(msg);
+    }
+    return response.json();
+  } catch (error: any) {
+    console.error(`Fetch Error [${endpoint}]:`, error);
+    throw new Error(`Connection failed: ${error.message}`);
   }
-  return response.json();
 };
 
 export const evaluateJob = async (url: string, userCV: string, preferences: string) => {
@@ -68,9 +77,11 @@ export const askAssistant = async (message: string | null, audioUri: string | nu
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Server responded with ${response.status}`);
-  }
-  return response.json();
+    const msg = errorData.details 
+      ? `${errorData.error}: ${errorData.details}` 
+      : (errorData.error || `Server responded with ${response.status}`);
+    throw new Error(msg);
+  }  return response.json();
 };
 
 export const matchStories = async (jobDescription: string, stories: any[]) => {
