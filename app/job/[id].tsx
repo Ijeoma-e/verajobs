@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const { width } = Dimensions.get('window');
 
