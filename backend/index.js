@@ -29,7 +29,7 @@ if (!process.env.GEMINI_API_KEY) {
   console.log("Gemini API Key detected, using model: gemini-3-flash-preview");
 }
 
-// --- Helper: Scraper ---
+// --- Helper: Scraper (Superpowered) ---
 async function scrapeJob(url) {
   try {
     if (!url || !url.startsWith("http")) {
@@ -43,53 +43,60 @@ async function scrapeJob(url) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://www.google.com/'
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
       timeout: 20000
     });
     
     const $ = cheerio.load(data);
+    
+    // Remove scripts, styles and other noise to save tokens
+    $('script, style, svg, nav, footer, iframe').remove();
 
     let company = 'Unknown', title = 'Unknown', description = '';
 
+    // Strategy 1: Specific Selectors
     if (url.includes('greenhouse.io')) {
-      company = $('div.header-container img').attr('alt') || $('meta[property="og:site_name"]').attr('content') || 'Greenhouse Company';
-      title = $('h1.app-title').text().trim() || $('meta[property="og:title"]').attr('content') || 'Job Position';
-      description = $('#content').text().trim() || $('.job-body').text().trim() || $('.main-content').text().trim();
+      company = $('div.header-container img').attr('alt') || $('meta[property="og:site_name"]').attr('content');
+      title = $('h1.app-title').text().trim();
+      description = $('#content').text().trim();
     } else if (url.includes('lever.co')) {
-      company = $('.posting-header h2').text().trim() || $('meta[property="og:site_name"]').attr('content') || 'Lever Company';
-      title = $('.posting-header h2').text().trim() || $('meta[property="og:title"]').attr('content') || 'Job Position';
-      description = $('.section.page-centered').text().trim() || $('.posting-description').text().trim() || $('[data-qa="job-description"]').text().trim();
-    } else if (url.includes('ashbyhq.com')) {
-      company = $('title').text().split('|')[1]?.trim() || $('meta[property="og:site_name"]').attr('content') || 'Ashby Company';
-      title = $('h1').first().text().trim() || $('meta[property="og:title"]').attr('content') || 'Job Position';
-      description = $('.job-description').text().trim() || $('main').text().trim();
-    } else {
-      // Generic fallback
-      company = $('meta[property="og:site_name"]').attr('content') || $('title').text().split('|')[0]?.trim() || 'Unknown Company';
-      title = $('meta[property="og:title"]').attr('content') || $('h1').first().text().trim() || $('title').text().trim() || 'Job Position';
+      company = $('meta[property="og:site_name"]').attr('content') || $('.posting-header h2').text().trim();
+      title = $('.posting-header h2').text().trim();
+      description = $('.section.page-centered').text().trim();
+    }
+
+    // Strategy 2: Agentic Extraction Fallback
+    // If we didn't get a good description, ask Gemini to find it in the raw text
+    if (!description || description.length < 200) {
+      console.log("Standard scraping limited. Engaging Agentic Extraction...");
+      const rawText = $('body').text().substring(0, 10000).replace(/\s+/g, ' ');
       
-      description = $('article').text().trim() || 
-                    $('[class*="job-description"]').text().trim() || 
-                    $('[class*="job_description"]').text().trim() || 
-                    $('[class*="description"]').text().trim() ||
-                    $('[id*="job-description"]').text().trim() ||
-                    $('[id*="description"]').text().trim() ||
-                    $('main').text().trim() ||
-                    $('body').text().trim();
+      const extractionPrompt = `
+        I am a job scraper. I have the following raw text from a webpage: "${url}".
+        Raw Text: ${rawText}
+        
+        Extract the:
+        1. Company Name
+        2. Job Title
+        3. Full Job Description
+        
+        Return ONLY JSON: { "company": "...", "title": "...", "description": "..." }
+      `;
+      
+      const result = await model.generateContent(extractionPrompt);
+      const extracted = extractJSON(result.response.text());
+      
+      company = extracted.company || company;
+      title = extracted.title || title;
+      description = extracted.description || description;
     }
     
-    // Clean up whitespace
-    description = description.replace(/\s+/g, ' ').trim();
-
-    if (!description || description.length < 150) {
-        console.warn(`Scraping warning: Short description extracted (${description.length} chars).`);
-    }
-
     return { 
-      company: company.substring(0, 100), 
-      title: title.substring(0, 100), 
-      description: description.substring(0, 12000) 
+      company: company || "Unknown Company", 
+      title: title || "Job Position", 
+      description: description || "" 
     };
   } catch (error) {
     console.error(`Scraping Error for ${url}:`, error.message);
