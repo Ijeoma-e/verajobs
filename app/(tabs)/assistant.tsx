@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, Linking } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { askAssistant } from '@/services/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { Avatar, Card, IconButton } from 'react-native-paper';
 
 const { width } = Dimensions.get('window');
 
 export default function AssistantScreen() {
   const [messages, setMessages] = useState<any[]>([
-    { id: 1, text: "Hi, I'm Vera. I can help you find jobs, evaluate them, or tailor your CV. What are we looking for today?", sender: 'ai' }
+    { id: 1, text: "Hi, I'm Vera. Let's elevate your career. How can I assist you today?", sender: 'ai' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export default function AssistantScreen() {
   const handleSend = async (text: string | null, audioUri: string | null = null) => {
     if (!text && !audioUri) return;
 
-    const displayMsg = text || "🎤 [Voice Message]";
+    const displayMsg = text || "🎤 [Voice Memo]";
     const userMsg = { id: Date.now(), text: displayMsg, sender: 'user' };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -37,12 +38,12 @@ export default function AssistantScreen() {
         intent: result.intent,
         companies: result.suggested_companies,
         searchUrl: result.search_query ? `https://www.google.com/search?q=${encodeURIComponent(result.search_query + " jobs")}` : null,
-        action: result.search_query ? "Open Search Results" : null
+        action: result.search_query ? "Explore Roles" : null
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
       console.error(error);
-      setMessages(prev => [...prev, { id: Date.now() + 2, text: "Sorry, I'm having trouble connecting right now.", sender: 'ai' }]);
+      setMessages(prev => [...prev, { id: Date.now() + 2, text: "My apologies, I'm momentarily offline.", sender: 'ai' }]);
     } finally {
       setLoading(false);
     }
@@ -73,22 +74,32 @@ export default function AssistantScreen() {
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       style={styles.container}
-      keyboardVerticalOffset={100}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <LinearGradient colors={['#F8FAFC', '#F1F5F9']} style={styles.background} />
+      <LinearGradient colors={['#FDFDFF', '#F3F4FF', '#EBEBFF']} style={styles.background} pointerEvents="none" />
       
+      {/* Aura Header */}
+      <View style={styles.auraHeader}>
+        <Text style={styles.headerTitle}>Vera</Text>
+        <View style={styles.onlineBadge}>
+          <View style={styles.onlineDot} />
+          <Text style={styles.onlineText}>Aura Active</Text>
+        </View>
+      </View>
+
       <ScrollView 
         ref={scrollViewRef}
         style={styles.chatList}
         contentContainerStyle={styles.chatContent}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        showsVerticalScrollIndicator={false}
       >
         {messages.map((msg) => (
           <View key={msg.id} style={[styles.messageWrapper, msg.sender === 'user' ? styles.userWrapper : styles.aiWrapper]}>
             {msg.sender === 'ai' && (
-              <View style={styles.aiAvatar}>
-                <FontAwesome name="bolt" size={14} color="#fff" />
-              </View>
+              <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiAvatar}>
+                <MaterialCommunityIcons name="sparkles" size={16} color="#fff" />
+              </LinearGradient>
             )}
             <View style={[styles.messageBubble, msg.sender === 'user' ? styles.userBubble : styles.aiBubble]}>
               <Text style={[styles.messageText, msg.sender === 'user' ? styles.userText : styles.aiText]}>
@@ -99,18 +110,20 @@ export default function AssistantScreen() {
               {msg.companies && (
                 <View style={styles.companiesGrid}>
                   {msg.companies.map((c: any, i: number) => (
-                    <View key={i} style={styles.companyCard}>
-                      <Text style={styles.companyName}>{c.name}</Text>
-                      <Text style={styles.companyReason}>{c.reason}</Text>
+                    <View key={i} style={styles.auraCompanyCard}>
+                      <Text style={styles.auraCompanyName}>{c.name}</Text>
+                      <Text style={styles.auraCompanyReason}>{c.reason}</Text>
                     </View>
                   ))}
                 </View>
               )}
 
               {msg.action && (
-                <TouchableOpacity style={styles.actionBox} onPress={() => Linking.openURL(msg.searchUrl)}>
-                  <Text style={styles.actionText}>{msg.action}</Text>
-                  <FontAwesome name="external-link" size={10} color="#4F46E5" style={{ marginLeft: 6 }} />
+                <TouchableOpacity style={styles.actionBtn} onPress={() => Linking.openURL(msg.searchUrl)}>
+                  <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.actionGradient} start={{x:0, y:0}} end={{x:1, y:0}}>
+                    <Text style={styles.actionBtnText}>{msg.action}</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={14} color="#fff" style={{ marginLeft: 6 }} />
+                  </LinearGradient>
                 </TouchableOpacity>
               )}
             </View>
@@ -118,190 +131,79 @@ export default function AssistantScreen() {
         ))}
         {loading && (
           <View style={styles.aiWrapper}>
-            <View style={styles.aiAvatar}>
+            <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.aiAvatar}>
               <ActivityIndicator size="small" color="#fff" />
-            </View>
-            <View style={[styles.messageBubble, styles.aiBubble]}>
-              <Text style={styles.aiText}>Thinking...</Text>
+            </LinearGradient>
+            <View style={[styles.messageBubble, styles.aiBubble, { paddingVertical: 10 }]}>
+              <Text style={[styles.aiText, { fontStyle: 'italic', opacity: 0.6 }]}>Thinking...</Text>
             </View>
           </View>
         )}
       </ScrollView>
 
-      <View style={styles.inputBar}>
-        <TouchableOpacity 
-          style={[styles.micButton, recording && styles.micButtonActive]} 
-          onPressIn={startRecording}
-          onPressOut={stopRecording}
-        >
-          <FontAwesome name={recording ? "stop" : "microphone"} size={20} color={recording ? "#EF4444" : "#4F46E5"} />
-        </TouchableOpacity>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Ask Vera anything..."
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={() => handleSend(input)}
-        />
-        
-        <TouchableOpacity style={styles.sendButton} onPress={() => handleSend(input)}>
-          <LinearGradient colors={['#4F46E5', '#7C3AED']} style={styles.sendButtonGradient}>
-            <FontAwesome name="arrow-up" size={16} color="#fff" />
-          </LinearGradient>
-        </TouchableOpacity>
+      {/* Modern Input Bar */}
+      <View style={styles.inputContainer}>
+        <View style={styles.inputGlass}>
+          <TouchableOpacity 
+            style={[styles.micBtn, recording && styles.micBtnActive]} 
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+          >
+            <MaterialCommunityIcons name={recording ? "stop" : "microphone"} size={22} color={recording ? "#EF4444" : "#6366F1"} />
+          </TouchableOpacity>
+          
+          <TextInput
+            style={styles.input}
+            placeholder="Talk to Vera..."
+            placeholderTextColor="#94A3B8"
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={() => handleSend(input)}
+          />
+          
+          <TouchableOpacity style={styles.sendBtn} onPress={() => handleSend(input)}>
+            <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.sendGradient}>
+              <MaterialCommunityIcons name="arrow-up" size={20} color="#fff" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  chatList: {
-    flex: 1,
-  },
-  chatContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  messageWrapper: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    alignItems: 'flex-end',
-    backgroundColor: 'transparent',
-  },
-  userWrapper: {
-    justifyContent: 'flex-end',
-  },
-  aiWrapper: {
-    justifyContent: 'flex-start',
-  },
-  aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#4F46E5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  messageBubble: {
-    maxWidth: width * 0.75,
-    padding: 14,
-    borderRadius: 20,
-  },
-  userBubble: {
-    backgroundColor: '#4F46E5',
-    borderBottomRightRadius: 4,
-  },
-  aiBubble: {
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  userText: {
-    color: '#fff',
-    fontWeight: '500',
-  },
-  aiText: {
-    color: '#0F172A',
-  },
-  companiesGrid: {
-    marginTop: 12,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  companyCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 10,
-    borderRadius: 12,
-    width: '100%',
-  },
-  companyName: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  companyReason: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  actionBox: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionText: {
-    fontSize: 12,
-    color: '#4F46E5',
-    fontWeight: '700',
-    fontStyle: 'italic',
-  },
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    paddingBottom: Platform.OS === 'ios' ? 30 : 15,
-  },
-  micButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  micButtonActive: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#EF4444',
-  },
-  input: {
-    flex: 1,
-    height: 44,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    marginRight: 10,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    overflow: 'hidden',
-  },
-  sendButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1 },
+  background: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  auraHeader: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTitle: { fontSize: 32, fontWeight: '900', color: '#0F172A', letterSpacing: -1 },
+  onlineBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(34, 197, 94, 0.1)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#22C55E', marginRight: 6 },
+  onlineText: { fontSize: 11, fontWeight: '800', color: '#22C55E', textTransform: 'uppercase' },
+  chatList: { flex: 1 },
+  chatContent: { padding: 20, paddingBottom: 100 },
+  messageWrapper: { flexDirection: 'row', marginBottom: 20, alignItems: 'flex-end' },
+  userWrapper: { justifyContent: 'flex-end' },
+  aiWrapper: { justifyContent: 'flex-start' },
+  aiAvatar: { width: 32, height: 32, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  messageBubble: { maxWidth: width * 0.75, padding: 16, borderRadius: 24 },
+  userBubble: { backgroundColor: '#6366F1', borderBottomRightRadius: 4, shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  aiBubble: { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#EEF2FF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  messageText: { fontSize: 15, lineHeight: 22 },
+  userText: { color: '#FFFFFF', fontWeight: '500' },
+  aiText: { color: '#0F172A', fontWeight: '400' },
+  companiesGrid: { marginTop: 15, gap: 8 },
+  auraCompanyCard: { backgroundColor: '#F9FAFF', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#EEF0FF' },
+  auraCompanyName: { fontSize: 14, fontWeight: '800', color: '#0F172A' },
+  auraCompanyReason: { fontSize: 11, color: '#64748B', marginTop: 3 },
+  actionBtn: { marginTop: 15, borderRadius: 12, overflow: 'hidden' },
+  actionGradient: { paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  actionBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  inputContainer: { position: 'absolute', bottom: 0, width: '100%', paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20 },
+  inputGlass: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 32, padding: 8, borderWidth: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  micBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F5FF', justifyContent: 'center', alignItems: 'center' },
+  micBtnActive: { backgroundColor: '#FEE2E2' },
+  input: { flex: 1, paddingHorizontal: 15, fontSize: 15, color: '#0F172A' },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden' },
+  sendGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

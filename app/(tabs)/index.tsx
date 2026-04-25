@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, ScrollView, Platform } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { Link } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 const { width } = Dimensions.get('window');
 
@@ -27,30 +28,31 @@ export default function PipelineScreen() {
 
   const renderItem = ({ item }: { item: any }) => (
     <Link href={`/job/${item.id}`} asChild>
-      <TouchableOpacity style={styles.jobCard} activeOpacity={0.9}>
-        <View style={styles.cardContent}>
+      <TouchableOpacity style={styles.cardContainer} activeOpacity={0.7}>
+        <View style={styles.auraCard}>
           <View style={styles.cardHeader}>
-            <View style={styles.companyBadge}>
-              <Text style={styles.company}>{item.company}</Text>
+            <View style={styles.logoCircle}>
+              <Text style={styles.logoInitial}>{item.company.charAt(0)}</Text>
             </View>
-            <LinearGradient
-              colors={getScoreColors(item.score)}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.scoreBadge}
-            >
-              <Text style={styles.scoreText}>{item.score}</Text>
-            </LinearGradient>
+            <View style={styles.headerTitleArea}>
+              <Text style={styles.companyName} numberOfLines={1}>{item.company}</Text>
+              <Text style={styles.jobTitle} numberOfLines={1}>{item.title}</Text>
+            </View>
+            <View style={[styles.scoreBadge, { backgroundColor: getScoreBg(item.score) }]}>
+              <Text style={[styles.scoreText, { color: getScoreColor(item.score) }]}>{item.score}</Text>
+            </View>
           </View>
           
-          <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+          <View style={styles.cardDivider} />
           
           <View style={styles.cardFooter}>
-            <View style={styles.statusBadge}>
+            <View style={[styles.statusPill, { backgroundColor: getStatusBg(item.status) }]}>
               <View style={[styles.statusDot, { backgroundColor: getStatusColor(item.status) }]} />
-              <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+              <Text style={[styles.statusLabel, { color: getStatusColor(item.status) }]}>
+                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+              </Text>
             </View>
-            <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+            <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -59,19 +61,25 @@ export default function PipelineScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#F8FAFC', '#F1F5F9']} style={styles.background} />
+      <LinearGradient colors={['#FDFDFF', '#F3F4FF', '#EBEBFF']} style={styles.background} pointerEvents="none" />
       
-      {/* Filter Tabs */}
-      <View style={styles.filterWrapper}>
+      {/* Aura Header */}
+      <View style={styles.auraHeader}>
+        <Text style={styles.headerGreeting}>Your Career</Text>
+        <Text style={styles.headerTitle}>Pipeline</Text>
+      </View>
+
+      {/* Modern Filter Scroll */}
+      <View style={styles.filterSection}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           {FILTERS.map((f) => (
             <TouchableOpacity 
               key={f} 
-              style={[styles.filterTab, activeFilter === f && styles.filterTabActive]}
+              style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
               onPress={() => setActiveFilter(f)}
             >
-              <Text style={[styles.filterTabText, activeFilter === f && styles.filterTabTextActive]}>
-                {f === 'all' ? 'All Jobs' : f.charAt(0).toUpperCase() + f.slice(1)}
+              <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>
+                {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -79,245 +87,120 @@ export default function PipelineScreen() {
       </View>
 
       {filteredJobs.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <FontAwesome name="briefcase" size={60} color="#CBD5E1" />
-          </View>
-          <Text style={styles.emptyTitle}>
-            {activeFilter === 'all' ? 'Your pipeline is empty' : `No jobs marked as \${activeFilter}`}
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            {activeFilter === 'all' 
-              ? 'Scrape your first job to see the AI evaluation magic.' 
-              : 'Try changing the filter or move jobs to this status.'}
-          </Text>
-          {activeFilter === 'all' && (
+        <View style={styles.emptyContainer}>
+          <LinearGradient colors={['#FFFFFF', '#F9FAFF']} style={styles.emptyAura}>
+            <MaterialCommunityIcons name="sparkles" size={64} color="#6366F1" opacity={0.3} />
+            <Text style={styles.emptyText}>Find your next aura job</Text>
             <Link href="/modal" asChild>
-              <TouchableOpacity style={styles.addButton}>
-                <LinearGradient
-                  colors={['#4F46E5', '#7C3AED']}
-                  style={styles.addButtonGradient}
-                >
-                  <Text style={styles.addButtonText}>Add Your First Job</Text>
+              <TouchableOpacity style={styles.emptyAddButton}>
+                <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.gradientBtn}>
+                  <Text style={styles.btnText}>Add Job</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </Link>
-          )}
+          </LinearGradient>
         </View>
       ) : (
         <FlatList
           data={filteredJobs}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4F46E5" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" />
           }
         />
       )}
+
+      {/* Floating Add Button */}
+      <Link href="/modal" asChild>
+        <TouchableOpacity style={styles.fab}>
+          <LinearGradient colors={['#6366F1', '#A855F7']} style={styles.fabGradient}>
+            <FontAwesome name="plus" size={20} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Link>
     </View>
   );
 }
 
-const getScoreColors = (score: string): [string, string] => {
+// Design Helpers
+const getScoreBg = (score: string) => {
   switch (score) {
-    case 'A': return ['#10B981', '#059669'];
-    case 'B': return ['#8BC34A', '#689F38'];
-    case 'C': return ['#F59E0B', '#D97706'];
-    case 'D': return ['#EF4444', '#DC2626'];
-    case 'F': return ['#475569', '#1E293B'];
-    default: return ['#94A3B8', '#64748B'];
+    case 'A': return 'rgba(16, 185, 129, 0.1)';
+    case 'B': return 'rgba(139, 195, 74, 0.1)';
+    case 'C': return 'rgba(245, 158, 11, 0.1)';
+    case 'D': return 'rgba(239, 68, 68, 0.1)';
+    default: return 'rgba(148, 163, 184, 0.1)';
+  }
+};
+
+const getScoreColor = (score: string) => {
+  switch (score) {
+    case 'A': return '#10B981';
+    case 'B': return '#8BC34A';
+    case 'C': return '#F59E0B';
+    case 'D': return '#EF4444';
+    default: return '#64748B';
+  }
+};
+
+const getStatusBg = (status: string) => {
+  switch (status) {
+    case 'applied': return 'rgba(79, 106, 210, 0.08)';
+    case 'interviewing': return 'rgba(168, 85, 247, 0.08)';
+    case 'offered': return 'rgba(34, 197, 94, 0.08)';
+    case 'rejected': return 'rgba(239, 68, 68, 0.08)';
+    default: return 'rgba(99, 102, 241, 0.08)';
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'applied': return '#3B82F6';
-    case 'interviewing': return '#8B5CF6';
-    case 'offered': return '#10B981';
+    case 'applied': return '#4F6AD2';
+    case 'interviewing': return '#A855F7';
+    case 'offered': return '#22C55E';
     case 'rejected': return '#EF4444';
     default: return '#6366F1';
   }
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  filterWrapper: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    paddingVertical: 12,
-  },
-  filterScroll: {
-    paddingHorizontal: 20,
-  },
-  filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginRight: 8,
-    backgroundColor: '#F8FAFC',
-  },
-  filterTabActive: {
-    backgroundColor: '#EEF2FF',
-  },
-  filterTabText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  filterTabTextActive: {
-    color: '#4F46E5',
-  },
-  list: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  jobCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    overflow: 'hidden',
-  },
-  cardContent: {
-    padding: 20,
-    backgroundColor: 'transparent',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    backgroundColor: 'transparent',
-  },
-  companyBadge: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  company: {
-    fontSize: 12,
-    color: '#4F46E5',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  scoreBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  scoreText: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderTopWidth: 1,
-    borderTopColor: '#F8FAFC',
-    paddingTop: 12,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B',
-    letterSpacing: 0.3,
-  },
-  date: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '500',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 30,
-  },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#1E293B',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
-  },
-  addButton: {
-    width: '100%',
-    height: 56,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  addButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  container: { flex: 1 },
+  background: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  auraHeader: { paddingHorizontal: 24, paddingTop: 60, paddingBottom: 20, backgroundColor: 'transparent' },
+  headerGreeting: { fontSize: 16, fontWeight: '600', color: '#6366F1', textTransform: 'uppercase', letterSpacing: 2 },
+  headerTitle: { fontSize: 42, fontWeight: '900', color: '#0F172A', letterSpacing: -1 },
+  filterSection: { marginBottom: 10, backgroundColor: 'transparent' },
+  filterScroll: { paddingHorizontal: 24, gap: 10 },
+  filterChip: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 25, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EEF0FF' },
+  filterChipActive: { backgroundColor: '#6366F1', borderColor: '#6366F1' },
+  filterChipText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
+  filterChipTextActive: { color: '#FFFFFF' },
+  listContent: { padding: 24, paddingTop: 10, paddingBottom: 100 },
+  cardContainer: { marginBottom: 16 },
+  auraCard: { backgroundColor: '#FFFFFF', borderRadius: 32, padding: 20, borderWidth: 1, borderColor: '#F0F2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'transparent' },
+  logoCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#F3F5FF', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EEF0FF' },
+  logoInitial: { fontSize: 20, fontWeight: '800', color: '#6366F1' },
+  headerTitleArea: { flex: 1, marginLeft: 15, backgroundColor: 'transparent' },
+  companyName: { fontSize: 13, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase' },
+  jobTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A', marginTop: 2 },
+  scoreBadge: { width: 40, height: 40, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  scoreText: { fontSize: 18, fontWeight: '900' },
+  cardDivider: { height: 1, backgroundColor: '#F1F3FF', marginVertical: 15 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'transparent' },
+  statusPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
+  statusLabel: { fontSize: 12, fontWeight: '800' },
+  dateText: { fontSize: 12, fontWeight: '600', color: '#CBD5E1' },
+  emptyContainer: { flex: 1, padding: 40, justifyContent: 'center' },
+  emptyAura: { borderRadius: 40, padding: 40, alignItems: 'center', borderWidth: 1, borderColor: '#EEF0FF' },
+  emptyText: { fontSize: 18, fontWeight: '700', color: '#94A3B8', marginTop: 20, marginBottom: 30 },
+  emptyAddButton: { width: '100%', height: 60, borderRadius: 20, overflow: 'hidden' },
+  gradientBtn: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  btnText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  fab: { position: 'absolute', bottom: 30, right: 30, width: 64, height: 64, borderRadius: 32, shadowColor: '#6366F1', shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  fabGradient: { flex: 1, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
 });

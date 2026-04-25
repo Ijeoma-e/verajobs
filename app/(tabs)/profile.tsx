@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, Dimensions,
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { db, auth } from '@/services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -16,7 +16,6 @@ export default function ProfileScreen() {
   const [prefs, setPrefs] = useState(user?.preferences || '');
   const [saving, setSaving] = useState(false);
 
-  // Sync state if user changes in store
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -36,215 +35,120 @@ export default function ProfileScreen() {
     };
 
     try {
-      // 1. Save to local persistent store
       setUser(updatedProfile);
-
-      // 2. Try to save to Firebase if we have a connection
       if (auth.currentUser) {
         await setDoc(doc(db, 'profiles', auth.currentUser.uid), updatedProfile);
       }
-
-      if (Platform.OS === 'web') {
-        alert('Profile Saved Successfully');
-      } else {
-        Alert.alert('Profile Secured', 'Your career data has been saved and synced.');
-      }
+      Platform.OS === 'web' ? alert('Aura Identity Updated') : Alert.alert('Aura Updated', 'Your career baseline is now perfectly synced.');
     } catch (error) {
-      console.error("Save error:", error);
-      if (Platform.OS === 'web') {
-        alert('Error saving profile. Local copy kept.');
-      } else {
-        Alert.alert('Sync Error', 'Profile saved locally, but failed to sync with cloud.');
-      }
+      console.error(error);
+      Alert.alert('Sync Interrupted', 'Data saved locally, but cloud sync is currently offline.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Career Identity</Text>
-        <Text style={styles.headerSubtitle}>Define your professional baseline for AI evaluation.</Text>
-      </View>
-
-      <View style={styles.inputSection}>
-        <View style={styles.labelRow}>
-          <FontAwesome name="user-circle" size={16} color="#4F46E5" />
-          <Text style={styles.label}>Full Name</Text>
-        </View>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="E.g. Jane Doe"
-          placeholderTextColor="#94A3B8"
-        />
-      </View>
-
-      <View style={styles.inputSection}>
-        <View style={styles.labelRow}>
-          <FontAwesome name="file-text" size={16} color="#4F46E5" />
-          <Text style={styles.label}>Master CV (Text)</Text>
-        </View>
-        <View style={styles.textAreaContainer}>
-          <TextInput
-            style={styles.textArea}
-            value={cv}
-            onChangeText={setCv}
-            placeholder="Paste your full CV here. This will be the source of truth for all tailored generations."
-            placeholderTextColor="#94A3B8"
-            multiline
-            numberOfLines={12}
-            textAlignVertical="top"
-          />
-        </View>
-      </View>
-
-      <View style={styles.inputSection}>
-        <View style={styles.labelRow}>
-          <FontAwesome name="sliders" size={16} color="#4F46E5" />
-          <Text style={styles.label}>Hard Preferences</Text>
-        </View>
-        <View style={styles.textAreaContainer}>
-          <TextInput
-            style={[styles.textArea, { height: 120 }]}
-            value={prefs}
-            onChangeText={setPrefs}
-            placeholder="E.g. Remote only, Min $180k, No early-stage startups, Principal roles only."
-            placeholderTextColor="#94A3B8"
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-          />
-        </View>
-      </View>
-
-      <TouchableOpacity 
-        style={[styles.saveButton, saving && styles.disabledButton]} 
-        onPress={handleSave} 
-        disabled={saving}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={['#4F46E5', '#7C3AED']}
-          style={styles.saveButtonGradient}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Career Profile</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <LinearGradient colors={['#FDFDFF', '#F3F4FF', '#EBEBFF']} style={styles.background} />
       
-      <View style={styles.infoBox}>
-        <FontAwesome name="lock" size={14} color="#64748B" />
-        <Text style={styles.infoText}>Your data is stored securely in Firebase.</Text>
+      <View style={styles.auraHeader}>
+        <Text style={styles.headerTitle}>Identity</Text>
+        <Text style={styles.headerSubtitle}>Personalize your AI career profile</Text>
       </View>
-      <View style={{ height: 40 }} />
+
+      <View style={styles.inputContainer}>
+        {/* Name Input */}
+        <View style={styles.auraField}>
+          <View style={styles.fieldHeader}>
+            <MaterialCommunityIcons name="account-circle-outline" size={18} color="#6366F1" />
+            <Text style={styles.fieldLabel}>Full Name</Text>
+          </View>
+          <TextInput
+            style={styles.auraInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="How should Vera address you?"
+            placeholderTextColor="#94A3B8"
+          />
+        </View>
+
+        {/* Master CV */}
+        <View style={styles.auraField}>
+          <View style={styles.fieldHeader}>
+            <MaterialCommunityIcons name="file-document-outline" size={18} color="#6366F1" />
+            <Text style={styles.fieldLabel}>Master CV Baseline</Text>
+          </View>
+          <View style={styles.auraTextAreaBox}>
+            <TextInput
+              style={styles.auraTextArea}
+              value={cv}
+              onChangeText={setCv}
+              placeholder="Paste your core CV text here..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+
+        {/* Career Preferences */}
+        <View style={styles.auraField}>
+          <View style={styles.fieldHeader}>
+            <MaterialCommunityIcons name="tune-variant" size={18} color="#6366F1" />
+            <Text style={styles.fieldLabel}>Career Preferences</Text>
+          </View>
+          <View style={styles.auraTextAreaBox}>
+            <TextInput
+              style={[styles.auraTextArea, { height: 120 }]}
+              value={prefs}
+              onChangeText={setPrefs}
+              placeholder="Sponsorship, Salary range, Stack preferences..."
+              placeholderTextColor="#94A3B8"
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.saveBtn} 
+          onPress={handleSave} 
+          disabled={saving}
+          activeOpacity={0.8}
+        >
+          <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.saveGradient}>
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Update Aura Profile</Text>}
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.securityBox}>
+          <MaterialCommunityIcons name="shield-check-outline" size={14} color="#94A3B8" />
+          <Text style={styles.securityText}>Your data is protected and private.</Text>
+        </View>
+      </View>
+      <View style={{ height: 100 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  scrollContent: {
-    padding: 24,
-  },
-  header: {
-    marginBottom: 32,
-    backgroundColor: 'transparent',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#64748B',
-    lineHeight: 24,
-  },
-  inputSection: {
-    marginBottom: 24,
-    backgroundColor: 'transparent',
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    backgroundColor: 'transparent',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#475569',
-    marginLeft: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    color: '#0F172A',
-  },
-  textAreaContainer: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  textArea: {
-    padding: 16,
-    fontSize: 15,
-    color: '#0F172A',
-    height: 250,
-    lineHeight: 22,
-  },
-  saveButton: {
-    height: 60,
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginTop: 16,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 6,
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  saveButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    backgroundColor: 'transparent',
-  },
-  infoText: {
-    fontSize: 12,
-    color: '#64748B',
-    marginLeft: 6,
-  },
+  container: { flex: 1 },
+  background: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  scrollContent: { padding: 24 },
+  auraHeader: { marginTop: 40, marginBottom: 30 },
+  headerTitle: { fontSize: 42, fontWeight: '900', color: '#0F172A', letterSpacing: -1 },
+  headerSubtitle: { fontSize: 16, color: '#64748B', fontWeight: '500' },
+  inputContainer: { gap: 24 },
+  auraField: { backgroundColor: 'transparent' },
+  fieldHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  fieldLabel: { fontSize: 13, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8 },
+  auraInput: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, fontSize: 16, color: '#0F172A', borderWeight: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  auraTextAreaBox: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 16, borderWeight: 1, borderColor: '#EEF2FF', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  auraTextArea: { height: 250, fontSize: 15, color: '#0F172A', lineHeight: 22 },
+  saveBtn: { height: 64, borderRadius: 22, overflow: 'hidden', marginTop: 10, shadowColor: '#6366F1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8 },
+  saveGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  saveBtnText: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
+  securityBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 },
+  securityText: { fontSize: 12, color: '#94A3B8', marginLeft: 6, fontWeight: '500' },
 });
