@@ -184,15 +184,19 @@ app.post("/api/tailor", async (req, res) => {
     const response = await retryAICall(prompt);
     const text = response.text();
     const tailored = extractJSON(text);
-    
+
     // Ensure the response has the expected structure, even if AI varies output
     const result = {
-      personal_info: tailored.personal_info || { name: "", email: "", phone: "" },
+      personal_info: tailored.personal_info || {
+        name: "",
+        email: "",
+        phone: "",
+      },
       summary: tailored.summary || "",
       experience: tailored.experience || [],
-      skills: tailored.skills || [] // Ensure skills is always an array
+      skills: tailored.skills || [], // Ensure skills is always an array
     };
-    
+
     console.log("Tailored CV result:", result);
     res.json(result);
   } catch (error) {
@@ -208,10 +212,14 @@ app.post("/api/tailor-cover-letter", async (req, res) => {
     const response = await retryAICall(prompt);
     const text = response.text();
     const tailored = extractJSON(text);
-    
+
     // Ensure the response has the expected structure, even if AI varies output
     const result = {
-      personal_info: tailored.personal_info || { name: "", email: "", phone: "" },
+      personal_info: tailored.personal_info || {
+        name: "",
+        email: "",
+        phone: "",
+      },
       date: tailored.date || new Date().toLocaleDateString(),
       company_address: tailored.company_address || "",
       hiring_manager: tailored.hiring_manager || "Hiring Manager",
@@ -220,16 +228,14 @@ app.post("/api/tailor-cover-letter", async (req, res) => {
       paragraph2: tailored.paragraph2 || "",
       paragraph3: tailored.paragraph3 || "",
       closing: tailored.closing || "Sincerely,",
-      signature: tailored.signature || ""
+      signature: tailored.signature || "",
     };
-    
+
     console.log("Tailored Cover Letter result:", result);
     res.json(result);
   } catch (error) {
     console.error("API Tailor Cover Letter Error:", error.message);
     res.status(500).json({ error: error.message });
-  }
-});
   }
 });
 
@@ -289,34 +295,56 @@ app.post("/api/agent/discover", async (req, res) => {
     const queries = extractJSON(response.text());
 
     // Generate realistic mock job data based on the queries
-    const mockDiscoveredJobs = queries.map((query, index) => {
-      const jobSeed = query.replace(/\s+/g, '-').toLowerCase();
-      const companies = [
-        "Microsoft", "Google", "Amazon", "Apple", "Meta", "Netflix", "Tesla", 
-        "OpenAI", "NVIDIA", "Adobe", "Salesforce", "Oracle", "IBM", "Intel"
-      ];
-      const titles = [
-        "Senior Software Engineer", "Data Scientist", "Product Manager", 
-        "Machine Learning Engineer", "DevOps Engineer", "Frontend Developer",
-        "Backend Developer", "Full Stack Developer", "Cloud Architect",
-        "AI Researcher", "UX Designer", "Technical Lead"
-      ];
-      
-      const randomCompany = companies[index % companies.length];
-      const randomTitle = titles[index % titles.length];
-      const score = ["A", "B", "C"][Math.floor(Math.random() * 3)];
-      
-      return {
-        id: `job-${Date.now()}-${index}-${jobSeed}`,
-        company: randomCompany,
-        title: randomTitle,
-        url: `https://careers.${randomCompany.toLowerCase().replace(' ', '')}.com/position/${jobSeed}-${index}`,
-        score: score,
-        reason: `Excellent match for ${query}. ${randomCompany} is looking for candidates with your skill set in ${query}.`,
-        isSeen: false,
-        createdAt: Date.now(),
-      };
-    }).filter(job => !existingJobUrls.includes(job.url));
+    const mockDiscoveredJobs = queries
+      .map((query, index) => {
+        const jobSeed = query.replace(/\s+/g, "-").toLowerCase();
+        const companies = [
+          "Microsoft",
+          "Google",
+          "Amazon",
+          "Apple",
+          "Meta",
+          "Netflix",
+          "Tesla",
+          "OpenAI",
+          "NVIDIA",
+          "Adobe",
+          "Salesforce",
+          "Oracle",
+          "IBM",
+          "Intel",
+        ];
+        const titles = [
+          "Senior Software Engineer",
+          "Data Scientist",
+          "Product Manager",
+          "Machine Learning Engineer",
+          "DevOps Engineer",
+          "Frontend Developer",
+          "Backend Developer",
+          "Full Stack Developer",
+          "Cloud Architect",
+          "AI Researcher",
+          "UX Designer",
+          "Technical Lead",
+        ];
+
+        const randomCompany = companies[index % companies.length];
+        const randomTitle = titles[index % titles.length];
+        const score = ["A", "B", "C"][Math.floor(Math.random() * 3)];
+
+        return {
+          id: `job-${Date.now()}-${index}-${jobSeed}`,
+          company: randomCompany,
+          title: randomTitle,
+          url: `https://careers.${randomCompany.toLowerCase().replace(" ", "")}.com/position/${jobSeed}-${index}`,
+          score: score,
+          reason: `Excellent match for ${query}. ${randomCompany} is looking for candidates with your skill set in ${query}.`,
+          isSeen: false,
+          createdAt: Date.now(),
+        };
+      })
+      .filter((job) => !existingJobUrls.includes(job.url));
 
     res.json({
       queries,
