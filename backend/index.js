@@ -180,13 +180,30 @@ app.post("/api/evaluate", async (req, res) => {
 app.post("/api/tailor", async (req, res) => {
   const { jobDescription, userCV } = req.body;
   try {
-    const prompt = `Tailor CV for Job: ${jobDescription}. CV: ${userCV}. Return ONLY JSON: { "personal_info": {"name": "...", "email": "...", "phone": "..."}, "summary": "...", "experience": [{"role": "...", "company": "...", "duration": "...", "bullets": []}], "skills": [] }`;
+    const prompt = `Tailor CV for Job: ${jobDescription}. CV: ${userCV}. Return ONLY JSON with this exact structure: { "personal_info": {"name": "...", "email": "...", "phone": "..."}, "summary": "...", "experience": [{"role": "...", "company": "...", "duration": "...", "bullets": []}], "skills": [] }`;
     const response = await retryAICall(prompt);
     const text = response.text();
-    res.json(extractJSON(text));
+    const tailored = extractJSON(text);
+    
+    // Ensure the response has the expected structure, even if AI varies output
+    const result = {
+      personal_info: tailored.personal_info || { name: "", email: "", phone: "" },
+      summary: tailored.summary || "",
+      experience: tailored.experience || [],
+      skills: tailored.skills || [] // Ensure skills is always an array
+    };
+    
+    console.log("Tailored CV result:", result);
+    res.json(result);
   } catch (error) {
     console.error("API Tailor Error:", error.message);
-    res.status(500).json({ error: error.message });
+    // Return a fallback structure on error
+    res.json({
+      personal_info: { name: "", email: "", phone: "" },
+      summary: "Unable to generate tailored summary",
+      experience: [],
+      skills: []
+    });
   }
 });
 

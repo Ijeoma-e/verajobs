@@ -3,6 +3,8 @@ import {
     extractTextFromPDF,
     getCurrentProvider,
     switchAIProvider,
+    getAvailableModels,
+    switchAIModel,
 } from "@/services/api";
 import { auth, db } from "@/services/firebase";
 import { useStore } from "@/store/useStore";

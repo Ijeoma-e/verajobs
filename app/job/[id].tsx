@@ -114,26 +114,26 @@ export default function JobDetailScreen() {
           </head>
           <body>
             <div class="header">
-              <h1 class="name">${tailored.personal_info.name}</h1>
-              <div class="contact">${tailored.personal_info.email} | ${tailored.personal_info.phone}</div>
+              <h1 class="name">${tailored.personal_info.name || ''}</h1>
+              <div class="contact">${tailored.personal_info.email || ''} | ${tailored.personal_info.phone || ''}</div>
             </div>
 
             <div class="section">
               <div class="section-title">Professional Summary</div>
-              <div class="summary">${tailored.summary}</div>
+              <div class="summary">${tailored.summary || ''}</div>
             </div>
 
             <div class="section">
               <div class="section-title">Experience</div>
-              ${tailored.experience.map((exp: any) => `
+              ${(tailored.experience || []).map((exp: any) => `
                 <div class="exp-item">
                   <div class="exp-header">
-                    <span class="exp-role">${exp.role}</span>
-                    <span class="exp-duration">${exp.duration}</span>
+                    <span class="exp-role">${exp.role || ''}</span>
+                    <span class="exp-duration">${exp.duration || ''}</span>
                   </div>
-                  <div class="exp-company">${exp.company}</div>
+                  <div class="exp-company">${exp.company || ''}</div>
                   <ul class="bullets">
-                    ${exp.bullets.map((b: string) => `<li class="bullet">${b}</li>`).join('')}
+                    ${(exp.bullets || []).map((b: string) => `<li class="bullet">${b}</li>`).join('')}
                   </ul>
                 </div>
               `).join('')}
@@ -142,7 +142,7 @@ export default function JobDetailScreen() {
             <div class="section">
               <div class="section-title">Technical Skills</div>
               <div class="skills">
-                ${tailored.skills.map((s: string) => `<span class="skill-tag">${s}</span>`).join('')}
+                ${(tailored.skills || []).map((s: string) => `<span class="skill-tag">${s}</span>`).join('')}
               </div>
             </div>
           </body>

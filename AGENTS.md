@@ -75,6 +75,9 @@ Frontend now includes a dual-selection UI:
 - **UI Standard**: Premium "AuraJobs" aesthetic (Mesh gradients, Bento cards)
 - **New Architecture**: Expo Router with `newArchEnabled: true`
 
+## TODO / Migration Notes
+- **SDK 54 Migration**: Replace `expo-av` with `expo-audio` and `expo-video` when upgrading to SDK 54
+
 ## File Structure
 - `app/` - Expo Router navigation and screens
 - `backend/` - Express API server
