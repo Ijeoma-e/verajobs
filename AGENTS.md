@@ -41,8 +41,8 @@ Copy `.env.example` to `.env` and fill:
 
 ## AI Provider Management
 Backend supports multiple AI providers with runtime switching:
-- **Gemini**: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash
-- **Z.AI**: glm-4-flash, glm-4.7-flash, glm-4.5-flash
+- **Gemini**: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.5-flash
+- **Z.AI**: glm-4-flash, glm-4.7-flash, glm-4.5-flash (default)
 - **OpenRouter**: google/gemini-2.0-flash-lite, meta-llama/llama-3-70b-instruct, mistralai/mistral-7b-instruct, nvidia/nemotron-3-super-120b-a12b:free
 
 API endpoints:

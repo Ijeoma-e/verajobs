@@ -41,7 +41,7 @@ export default function ProfileScreen() {
     user?.aiSettings?.provider || "gemini",
   );
   const [selectedModel, setSelectedModel] = useState(
-    user?.aiSettings?.model || "gemini-1.5-flash",
+    user?.aiSettings?.model || "gemini-2.5-flash",
   );
   const [availableProviders, setAvailableProviders] = useState<
     Record<string, boolean>
@@ -81,8 +81,12 @@ export default function ProfileScreen() {
     try {
       setLoadingModels(true);
       const data = await getAvailableModels(provider);
+      console.log("API Response for models:", data);
       setAvailableModels(data.models || []);
-      setSelectedModel(data.current || "gemini-1.5-flash");
+      
+      // Set appropriate default based on provider
+      const defaultModel = provider === "zai" ? "glm-4.5-flash" : "gemini-2.5-flash";
+      setSelectedModel(data.current || defaultModel);
       setModelError("");
     } catch (error: any) {
       console.error("Error fetching models:", error);
@@ -136,8 +140,9 @@ export default function ProfileScreen() {
     } catch (error: any) {
       console.error("Error switching model:", error);
       Alert.alert("Error", `Failed to switch model: ${error.message}`);
-      // Revert selection
-      setSelectedModel(user?.aiSettings?.model || "gemini-1.5-flash");
+      // Revert selection with appropriate default based on current provider
+      const defaultModel = selectedProvider === "zai" ? "glm-4.5-flash" : "gemini-2.5-flash";
+      setSelectedModel(user?.aiSettings?.model || defaultModel);
     }
   };
 
@@ -187,7 +192,7 @@ export default function ProfileScreen() {
       setIsAutonomous(user.aiSettings?.isAutonomous || false);
       setAutoTailor(user.aiSettings?.autoTailor || false);
       setSelectedProvider(user.aiSettings?.provider || "gemini");
-      setSelectedModel(user.aiSettings?.model || "gemini-1.5-flash");
+      setSelectedModel(user.aiSettings?.model || (user?.aiSettings?.provider === "zai" ? "glm-4.5-flash" : "gemini-2.5-flash"));
     }
   }, [user]);
 

@@ -26,6 +26,12 @@ const availableModels = {
       speed: "Very Fast",
       type: "Free",
     },
+    {
+      id: "gemini-2.5-flash",
+      name: "Gemini 2.5 Flash",
+      speed: "Very Fast",
+      type: "Free",
+    },
   ],
   zai: [
     {
@@ -74,11 +80,11 @@ const availableModels = {
 let providerConfig = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.AI_MODEL || "gemini-1.5-flash",
+    model: process.env.AI_MODEL || "gemini-2.5-flash",
   },
   zai: {
     apiKey: process.env.ZAI_API_KEY,
-    model: process.env.AI_MODEL || "glm-4-flash",
+    model: process.env.AI_MODEL || "glm-4.5-flash",
   },
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY,
