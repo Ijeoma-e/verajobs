@@ -65,8 +65,7 @@ export default function TabLayout() {
         name="appearance"
         options={{
           title: 'Appearance',
-          tabBarIcon: ({ color }) => <TabBarIcon name="palette" color={color} />,
-          href: null, // Hide from tab bar initially
+          tabBarIcon: ({ color }) => <TabBarIcon name="paint-brush" color={color} />,
         }}
       />
     </Tabs>

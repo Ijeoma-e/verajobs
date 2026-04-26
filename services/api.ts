@@ -53,6 +53,10 @@ export const getTailoredCV = async (jobDescription: string, userCV: string) => {
   return postJSON("/api/tailor", { jobDescription, userCV });
 };
 
+export const getTailoredCoverLetter = async (jobDescription: string, userCV: string, companyName: string, jobTitle: string) => {
+  return postJSON("/api/tailor-cover-letter", { jobDescription, userCV, companyName, jobTitle });
+};
+
 export const askAssistant = async (
   message: string | null,
   audioUri: string | null,
@@ -229,6 +233,7 @@ export const getCurrentSettings = async () => {
 export default {
   evaluateJob,
   getTailoredCV,
+  getTailoredCoverLetter,
   askAssistant,
   matchStories,
   discoverJobs,

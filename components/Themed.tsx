@@ -30,6 +30,17 @@ export function useThemeColor(
   }
 }
 
+// Additional theme utilities for better dark mode support
+export function useIsDarkMode() {
+  const theme = useColorScheme() ?? 'light';
+  return theme === 'dark';
+}
+
+export function getThemeColors() {
+  const theme = useColorScheme() ?? 'light';
+  return Colors[theme];
+}
+
 export function Text(props: TextProps) {
   const { style, lightColor, darkColor, ...otherProps } = props;
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');

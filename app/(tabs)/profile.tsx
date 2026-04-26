@@ -12,6 +12,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { doc, setDoc } from "firebase/firestore";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -30,6 +31,7 @@ const { width } = Dimensions.get("window");
 
 export default function ProfileScreen() {
   const { user, setUser } = useStore();
+  const router = useRouter();
   const [name, setName] = useState(user?.name || "");
   const [cv, setCv] = useState(user?.baseCV || "");
   const [prefs, setPrefs] = useState(user?.preferences || "");
@@ -55,6 +57,16 @@ export default function ProfileScreen() {
   const [loadingModels, setLoadingModels] = useState(false);
   const [providerError, setProviderError] = useState("");
   const [modelError, setModelError] = useState("");
+  
+  // Accordion state
+  const [expandedSections, setExpandedSections] = useState({
+    profile: true,
+    cv: true,
+    preferences: true,
+    aiSettings: true,
+    veraPowers: true,
+    appearance: false,
+  });
 
   // Fetch available providers on mount
   useEffect(() => {
@@ -124,7 +136,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleModelSwitch = async (newModel: string) => {
+const handleModelSwitch = async (newModel: string) => {
     try {
       setSelectedModel(newModel);
       const result = await switchAIModel(newModel);
@@ -142,10 +154,16 @@ export default function ProfileScreen() {
     } catch (error: any) {
       console.error("Error switching model:", error);
       Alert.alert("Error", `Failed to switch model: ${error.message}`);
-      // Revert selection with appropriate default based on current provider
-      const defaultModel = selectedProvider === "zai" ? "glm-4.5-flash" : "gemini-2.5-flash";
-      setSelectedModel(user?.aiSettings?.model || defaultModel);
+      // Revert selection
+      setSelectedModel(user?.aiSettings?.model || "gemini-2.5-flash");
     }
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section as keyof typeof prev]
+    }));
   };
 
   const handleUploadCV = async () => {
@@ -379,104 +397,119 @@ export default function ProfileScreen() {
 
         {/* AI Provider Settings */}
         <View style={styles.auraField}>
-          <View style={styles.fieldHeader}>
-            <MaterialCommunityIcons name="brain" size={18} color="#6366F1" />
-            <Text style={styles.fieldLabel}>AI Provider</Text>
-          </View>
-          {loadingProviders ? (
-            <View
-              style={[
-                styles.auraTextAreaBox,
-                { justifyContent: "center", alignItems: "center", padding: 24 },
-              ]}
-            >
-              <ActivityIndicator size="large" color="#6366F1" />
-              <Text style={{ marginTop: 12, color: "#64748B" }}>
-                Loading providers...
-              </Text>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('aiProvider')}
+          >
+            <View style={styles.fieldHeader}>
+              <MaterialCommunityIcons name="brain" size={18} color="#6366F1" />
+              <Text style={styles.fieldLabel}>AI Provider</Text>
+              <MaterialCommunityIcons
+                name={expandedSections.aiProvider ? "chevron-down" : "chevron-right"}
+                size={20}
+                color="#6366F1"
+              />
             </View>
-          ) : providerError ? (
-            <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
-              <Text
-                style={{ color: "#EF4444", fontSize: 14, fontWeight: "600" }}
-              >
-                {providerError}
-              </Text>
-            </View>
-          ) : (
+          </TouchableOpacity>
+          
+          {expandedSections.aiProvider && (
             <View style={styles.auraTextAreaBox}>
-              {Object.keys(availableProviders).length === 0 ? (
-                <Text
-                  style={{ padding: 16, color: "#64748B", fontWeight: "500" }}
+              {loadingProviders ? (
+                <View
+                  style={[
+                    styles.auraTextAreaBox,
+                    { justifyContent: "center", alignItems: "center", padding: 24 },
+                  ]}
                 >
-                  No AI providers configured.
-                </Text>
+                  <ActivityIndicator size="large" color="#6366F1" />
+                  <Text style={{ marginTop: 12, color: "#64748B" }}>
+                    Loading providers...
+                  </Text>
+                </View>
+              ) : providerError ? (
+                <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
+                  <Text
+                    style={{ color: "#EF4444", fontSize: 14, fontWeight: "600" }}
+                  >
+                    {providerError}
+                  </Text>
+                </View>
               ) : (
-                Object.entries(availableProviders).map(
-                  ([provider, available], index) => (
-                    <React.Fragment key={provider}>
-                      <TouchableOpacity
-                        style={[
-                          styles.providerOption,
-                          selectedProvider === provider &&
-                            styles.providerOptionSelected,
-                        ]}
-                        onPress={() => handleProviderSwitch(provider)}
-                        disabled={!available}
-                      >
-                        <View style={styles.providerOptionContent}>
-                          <MaterialCommunityIcons
-                            name={
-                              provider === "gemini"
-                                ? "google"
-                                : provider === "zai"
-                                  ? "lightning-bolt"
-                                  : "router-wireless"
-                            }
-                            size={20}
-                            color={
-                              selectedProvider === provider
-                                ? "#6366F1"
-                                : "#94A3B8"
-                            }
-                          />
-                          <View style={styles.providerInfo}>
-                            <Text
-                              style={[
-                                styles.providerName,
-                                selectedProvider === provider &&
-                                  styles.providerNameSelected,
-                              ]}
-                            >
-                              {provider === "gemini"
-                                ? "Google Gemini"
-                                : provider === "zai"
-                                  ? "Z.AI"
-                                  : "OpenRouter"}
-                            </Text>
-                            <Text style={styles.providerDesc}>
-                              {provider === "gemini"
-                                ? "Free • Fast"
-                                : provider === "zai"
-                                  ? "Free • Very Fast"
-                                  : "Free + Paid • Multiple Models"}
-                            </Text>
-                          </View>
-                        </View>
-                        {selectedProvider === provider && (
-                          <MaterialCommunityIcons
-                            name="check-circle"
-                            size={24}
-                            color="#6366F1"
-                          />
-                        )}
-                      </TouchableOpacity>
-                      {index < Object.keys(availableProviders).length - 1 && (
-                        <View style={styles.cardDivider} />
-                      )}
-                    </React.Fragment>
-                  ),
-                )
+                <View style={styles.auraTextAreaBox}>
+                  {Object.keys(availableProviders).length === 0 ? (
+                    <Text
+                      style={{ padding: 16, color: "#64748B", fontWeight: "500" }}
+                    >
+                      No AI providers configured.
+                    </Text>
+                  ) : (
+                    Object.entries(availableProviders).map(
+                      ([provider, available], index) => (
+                        <React.Fragment key={provider}>
+                          <TouchableOpacity
+                            style={[
+                              styles.providerOption,
+                              selectedProvider === provider &&
+                                styles.providerOptionSelected,
+                            ]}
+                            onPress={() => handleProviderSwitch(provider)}
+                            disabled={!available}
+                          >
+                            <View style={styles.providerOptionContent}>
+                              <MaterialCommunityIcons
+                                name={
+                                  provider === "gemini"
+                                    ? "google"
+                                    : provider === "zai"
+                                      ? "lightning-bolt"
+                                      : "router-wireless"
+                                }
+                                size={20}
+                                color={
+                                  selectedProvider === provider
+                                    ? "#6366F1"
+                                    : "#94A3B8"
+                                }
+                              />
+                              <View style={styles.providerInfo}>
+                                <Text
+                                  style={[
+                                    styles.providerName,
+                                    selectedProvider === provider &&
+                                      styles.providerNameSelected,
+                                  ]}
+                                >
+                                  {provider === "gemini"
+                                    ? "Google Gemini"
+                                    : provider === "zai"
+                                      ? "Z.AI"
+                                      : "OpenRouter"}
+                                </Text>
+                                <Text style={styles.providerDesc}>
+                                  {provider === "gemini"
+                                    ? "Free • Fast"
+                                    : provider === "zai"
+                                      ? "Free • Very Fast"
+                                      : "Free + Paid • Multiple Models"}
+                                </Text>
+                              </View>
+                            </View>
+                            {selectedProvider === provider && (
+                              <MaterialCommunityIcons
+                                name="check-circle"
+                                size={24}
+                                color="#6366F1"
+                              />
+                            )}
+                          </TouchableOpacity>
+                          {index < Object.keys(availableProviders).length - 1 && (
+                            <View style={styles.cardDivider} />
+                          )}
+                        </React.Fragment>
+                      ),
+                    )
+                  )}
+                </View>
               )}
             </View>
           )}
@@ -485,84 +518,99 @@ export default function ProfileScreen() {
         {/* AI Model Settings */}
         {selectedProvider && (
           <View style={styles.auraField}>
-            <View style={styles.fieldHeader}>
-              <MaterialCommunityIcons name="memory" size={18} color="#6366F1" />
-              <Text style={styles.fieldLabel}>AI Model</Text>
-            </View>
-            {loadingModels ? (
-              <View
-                style={[
-                  styles.auraTextAreaBox,
-                  { justifyContent: "center", alignItems: "center", padding: 24 },
-                ]}
-              >
-                <ActivityIndicator size="large" color="#6366F1" />
-                <Text style={{ marginTop: 12, color: "#64748B" }}>
-                  Loading models...
-                </Text>
+            <TouchableOpacity 
+              style={styles.sectionHeader}
+              onPress={() => toggleSection('aiModel')}
+            >
+              <View style={styles.fieldHeader}>
+                <MaterialCommunityIcons name="memory" size={18} color="#6366F1" />
+                <Text style={styles.fieldLabel}>AI Model</Text>
+                <MaterialCommunityIcons
+                  name={expandedSections.aiModel ? "chevron-down" : "chevron-right"}
+                  size={20}
+                  color="#6366F1"
+                />
               </View>
-            ) : modelError ? (
-              <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
-                <Text
-                  style={{ color: "#EF4444", fontSize: 14, fontWeight: "600" }}
-                >
-                  {modelError}
-                </Text>
-              </View>
-            ) : availableModels.length === 0 ? (
-              <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
-                <Text
-                  style={{ color: "#64748B", fontWeight: "500" }}
-                >
-                  No models available for {selectedProvider}.
-                </Text>
-              </View>
-            ) : (
+            </TouchableOpacity>
+            
+            {expandedSections.aiModel && (
               <View style={styles.auraTextAreaBox}>
-                {availableModels.map((model, index) => (
-                  <React.Fragment key={model.id}>
-                    <TouchableOpacity
-                      style={[
-                        styles.modelOption,
-                        selectedModel === model.id &&
-                          styles.modelOptionSelected,
-                      ]}
-                      onPress={() => handleModelSwitch(model.id)}
+                {loadingModels ? (
+                  <View
+                    style={[
+                      styles.auraTextAreaBox,
+                      { justifyContent: "center", alignItems: "center", padding: 24 },
+                    ]}
+                  >
+                    <ActivityIndicator size="large" color="#6366F1" />
+                    <Text style={{ marginTop: 12, color: "#64748B" }}>
+                      Loading models...
+                    </Text>
+                  </View>
+                ) : modelError ? (
+                  <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
+                    <Text
+                      style={{ color: "#EF4444", fontSize: 14, fontWeight: "600" }}
                     >
-                      <View style={styles.modelOptionContent}>
-                        <View style={styles.modelInfo}>
-                          <Text
-                            style={[
-                              styles.modelName,
-                              selectedModel === model.id &&
-                                styles.modelNameSelected,
-                            ]}
-                          >
-                            {model.name}
-                          </Text>
-                          <View style={styles.modelMeta}>
-                            <Text style={styles.modelSpeed}>
-                              {model.speed}
-                            </Text>
-                            <Text style={styles.modelType}>
-                              • {model.type}
-                            </Text>
+                      {modelError}
+                    </Text>
+                  </View>
+                ) : availableModels.length === 0 ? (
+                  <View style={[styles.auraTextAreaBox, { padding: 16 }]}>
+                    <Text
+                      style={{ color: "#64748B", fontWeight: "500" }}
+                    >
+                      No models available for {selectedProvider}.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.auraTextAreaBox}>
+                    {availableModels.map((model, index) => (
+                      <React.Fragment key={model.id}>
+                        <TouchableOpacity
+                          style={[
+                            styles.modelOption,
+                            selectedModel === model.id &&
+                              styles.modelOptionSelected,
+                          ]}
+                          onPress={() => handleModelSwitch(model.id)}
+                        >
+                          <View style={styles.modelOptionContent}>
+                            <View style={styles.modelInfo}>
+                              <Text
+                                style={[
+                                  styles.modelName,
+                                  selectedModel === model.id &&
+                                    styles.modelNameSelected,
+                                ]}
+                              >
+                                {model.name}
+                              </Text>
+                              <View style={styles.modelMeta}>
+                                <Text style={styles.modelSpeed}>
+                                  {model.speed}
+                                </Text>
+                                <Text style={styles.modelType}>
+                                  • {model.type}
+                                </Text>
+                              </View>
+                            </View>
+                            {selectedModel === model.id && (
+                              <MaterialCommunityIcons
+                                name="check-circle"
+                                size={24}
+                                color="#6366F1"
+                              />
+                            )}
                           </View>
-                        </View>
-                        {selectedModel === model.id && (
-                          <MaterialCommunityIcons
-                            name="check-circle"
-                            size={24}
-                            color="#6366F1"
-                          />
+                        </TouchableOpacity>
+                        {index < availableModels.length - 1 && (
+                          <View style={styles.cardDivider} />
                         )}
-                      </View>
-                    </TouchableOpacity>
-                    {index < availableModels.length - 1 && (
-                      <View style={styles.cardDivider} />
-                    )}
-                  </React.Fragment>
-                ))}
+                      </React.Fragment>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -587,30 +635,45 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* Appearance Settings */}
-        <TouchableOpacity
-          style={styles.appearanceButton}
-          onPress={() => {
-            // In a real app, this would navigate to the appearance screen
-            // For now, we'll show an alert
-            Alert.alert(
-              "Appearance Settings",
-              "Appearance customization will be available in the next update!",
-              [{ text: "OK", style: "default" }]
-            );
-          }}
-        >
-          <LinearGradient
-            colors={["#6366F1", "#8B5CF6"]}
-            style={styles.appearanceGradient}
+        <View style={styles.auraField}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('appearance')}
           >
-            <MaterialCommunityIcons
-              name="palette"
-              size={20}
-              color="#FFFFFF"
-            />
-            <Text style={styles.appearanceText}>Customize Appearance</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <View style={styles.fieldHeader}>
+              <MaterialCommunityIcons name="palette-outline" size={18} color="#6366F1" />
+              <Text style={styles.fieldLabel}>Appearance</Text>
+              <MaterialCommunityIcons
+                name={expandedSections.appearance ? "chevron-down" : "chevron-right"}
+                size={20}
+                color="#6366F1"
+              />
+            </View>
+          </TouchableOpacity>
+          
+          {expandedSections.appearance && (
+            <View style={styles.auraTextAreaBox}>
+              <TouchableOpacity
+                style={styles.appearanceButton}
+                onPress={() => {
+                  router.push("/(tabs)/appearance");
+                }}
+              >
+                <LinearGradient
+                  colors={["#6366F1", "#8B5CF6"]}
+                  style={styles.appearanceGradient}
+                >
+                  <MaterialCommunityIcons
+                    name="palette-outline"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.appearanceText}>Customize Appearance</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         <View style={styles.securityBox}>
           <MaterialCommunityIcons
@@ -651,6 +714,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginLeft: 8,
     flex: 1,
+  },
+  sectionHeader: {
+    backgroundColor: "transparent",
+    paddingVertical: 8,
   },
   uploadMiniBtn: {
     padding: 8,

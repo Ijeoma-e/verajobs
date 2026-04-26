@@ -197,13 +197,39 @@ app.post("/api/tailor", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("API Tailor Error:", error.message);
-    // Return a fallback structure on error
-    res.json({
-      personal_info: { name: "", email: "", phone: "" },
-      summary: "Unable to generate tailored summary",
-      experience: [],
-      skills: []
-    });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/tailor-cover-letter", async (req, res) => {
+  const { jobDescription, userCV, companyName, jobTitle } = req.body;
+  try {
+    const prompt = `Write a professional cover letter for ${jobTitle} position at ${companyName}. Job Description: ${jobDescription}. CV: ${userCV}. Return ONLY JSON with this exact structure: { "personal_info": {"name": "...", "email": "...", "phone": "..."}, "date": "...", "company_address": "...", "hiring_manager": "Hiring Manager", "salutation": "...", "paragraph1": "...", "paragraph2": "...", "paragraph3": "...", "closing": "...", "signature": "..." }`;
+    const response = await retryAICall(prompt);
+    const text = response.text();
+    const tailored = extractJSON(text);
+    
+    // Ensure the response has the expected structure, even if AI varies output
+    const result = {
+      personal_info: tailored.personal_info || { name: "", email: "", phone: "" },
+      date: tailored.date || new Date().toLocaleDateString(),
+      company_address: tailored.company_address || "",
+      hiring_manager: tailored.hiring_manager || "Hiring Manager",
+      salutation: tailored.salutation || "Dear Hiring Manager,",
+      paragraph1: tailored.paragraph1 || "",
+      paragraph2: tailored.paragraph2 || "",
+      paragraph3: tailored.paragraph3 || "",
+      closing: tailored.closing || "Sincerely,",
+      signature: tailored.signature || ""
+    };
+    
+    console.log("Tailored Cover Letter result:", result);
+    res.json(result);
+  } catch (error) {
+    console.error("API Tailor Cover Letter Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
   }
 });
 

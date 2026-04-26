@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Dim
 import { Text, View } from '@/components/Themed';
 import { useLocalSearchParams, Link, useRouter } from 'expo-router';
 import { useStore } from '@/store/useStore';
-import { getTailoredCV, evaluateJob } from '@/services/api';
+import { getTailoredCV, getTailoredCoverLetter, evaluateJob } from '@/services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
 import * as Print from 'expo-print';
@@ -21,6 +21,7 @@ export default function JobDetailScreen() {
   const job = jobs.find((j) => j.id === id);
   const [loading, setLoading] = useState(false);
   const [reevaluating, setReevaluating] = useState(false);
+  const [tailoringCoverLetter, setTailoringCoverLetter] = useState(false);
   const [notes, setNotes] = useState(job?.notes || '');
   const [showStatusModal, setShowStatusModal] = useState(false);
 
@@ -94,22 +95,178 @@ export default function JobDetailScreen() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
             <style>
-              body { font-family: 'DM Sans', sans-serif; padding: 40px; color: #1a1a1a; line-height: 1.5; }
-              .header { border-bottom: 2px solid #6366F1; padding-bottom: 20px; margin-bottom: 30px; }
-              .name { font-size: 32px; font-weight: 700; color: #000; margin: 0; }
-              .contact { color: #666; font-size: 14px; margin-top: 5px; }
-              .section { margin-bottom: 25px; }
-              .section-title { font-size: 14px; font-weight: 700; color: #6366F1; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px; }
-              .summary { font-size: 15px; margin-bottom: 20px; }
-              .exp-item { margin-bottom: 20px; }
-              .exp-header { display: flex; justify-content: space-between; font-weight: 700; }
-              .exp-company { color: #444; }
+              body { 
+                font-family: 'DM Sans', sans-serif; 
+                padding: 25px 35px; 
+                color: #1a1a1a; 
+                line-height: 1.4;
+                margin: 0;
+                padding-bottom: 80px; /* Reduced space for footer */
+              }
+              
+              /* Page styles */
+              @page {
+                margin: 2cm;
+                @bottom-center {
+                  content: counter(page);
+                  font-family: 'DM Sans', sans-serif;
+                  font-size: 10px;
+                  color: #666;
+                }
+              }
+              
+              .page-break {
+                page-break-before: always;
+              }
+              
+              /* Optimized page break management for 70-80% page usage */
+              .header {
+                page-break-after: avoid;
+                min-height: 0;
+              }
+              
+              /* Allow sections to use 70-80% of page before breaking */
+              .section {
+                page-break-inside: avoid;
+                min-height: 0;
+                margin-bottom: 20px;
+              }
+              
+              /* Allow experience items to break within sections */
+              .exp-item {
+                page-break-inside: auto;
+                margin-bottom: 15px;
+              }
+              
+              .exp-header, .exp-company {
+                page-break-after: avoid;
+              }
+              
+              /* Allow summary to break within section */
+              .summary {
+                page-break-inside: auto;
+                margin-bottom: 15px;
+              }
+              
+              /* Allow bullets to break naturally */
+              .bullets {
+                page-break-inside: auto;
+              }
+              
+              .bullets li {
+                page-break-inside: auto;
+                margin-bottom: 4px;
+              }
+              
+              /* Allow skills to break naturally */
+              .skills {
+                page-break-inside: auto;
+                flex-wrap: wrap;
+              }
+              
+              .skill-tag {
+                page-break-inside: avoid;
+                margin: 2px;
+              }
+              
+              /* Reduce overall spacing to use more page space */
+              body {
+                line-height: 1.4;
+              }
+              
+              /* Ensure content flows better */
+              .section-title {
+                page-break-after: avoid;
+                margin-bottom: 10px;
+              }
+              
+              /* Footer styles */
+              .footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #fff;
+                border-top: 1px solid #eee;
+                padding: 10px 40px;
+                font-size: 10px;
+                color: #666;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                z-index: 100;
+                box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
+              }
+              
+              .footer-left {
+                font-weight: 500;
+              }
+              
+              .footer-right {
+                font-weight: 500;
+              }
+              
+              .page-number {
+                font-weight: 700;
+              }
+              
+              /* Existing styles */
+              .header { 
+                border-bottom: 2px solid #6366F1; 
+                padding-bottom: 15px; 
+                margin-bottom: 20px;
+                padding-top: 8px;
+              }
+              .name { font-size: 30px; font-weight: 700; color: #000; margin: 0; }
+              .contact { color: #666; font-size: 13px; margin-top: 3px; }
+              .section { margin-bottom: 20px; }
+              .section-title { 
+                font-size: 14px; 
+                font-weight: 700; 
+                color: #6366F1; 
+                text-transform: uppercase; 
+                letter-spacing: 1px; 
+                border-bottom: 1px solid #eee; 
+                padding-bottom: 6px; 
+                margin-bottom: 12px;
+                margin-top: 8px;
+              }
+              
+              /* Prevent section titles from being alone on next page */
+              .section-title:first-child {
+                margin-top: 0;
+              }
+              .summary { font-size: 15px; margin-bottom: 15px; line-height: 1.4; }
+              .exp-item { 
+                margin-bottom: 18px; 
+              }
+              .exp-header { display: flex; justify-content: space-between; font-weight: 700; align-items: baseline; }
+              .exp-company { color: #444; font-size: 14px; margin-bottom: 2px; }
               .exp-duration { color: #888; font-size: 13px; }
-              .exp-role { font-weight: 700; font-size: 16px; margin: 4px 0; }
-              .bullets { margin-top: 8px; padding-left: 20px; }
-              .bullet { margin-bottom: 5px; font-size: 14px; }
-              .skills { display: flex; flex-wrap: wrap; gap: 8px; }
-              .skill-tag { background: #f0f2ff; color: #6366F1; padding: 4px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+              .exp-role { font-weight: 700; font-size: 16px; margin: 0; }
+              .bullets { 
+                margin-top: 8px; 
+                padding-left: 18px;
+              }
+              .bullet { 
+                margin-bottom: 4px; 
+                font-size: 14px; 
+                line-height: 1.3;
+              }
+              .skills { 
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 6px;
+              }
+              .skill-tag { 
+                background: #f0f2ff; 
+                color: #6366F1; 
+                padding: 3px 10px; 
+                border-radius: 4px; 
+                font-size: 13px; 
+                font-weight: 500;
+                margin: 1px;
+              }
             </style>
           </head>
           <body>
@@ -145,6 +302,30 @@ export default function JobDetailScreen() {
                 ${(tailored.skills || []).map((s: string) => `<span class="skill-tag">${s}</span>`).join('')}
               </div>
             </div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <div class="footer-left">
+                ${tailored.personal_info.name || ''} | ${tailored.personal_info.email || ''}
+              </div>
+              <div class="footer-right">
+                Page <span class="page-number"></span>
+              </div>
+            </div>
+
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                // Add page numbers
+                const pageNumbers = document.querySelectorAll('.page-number');
+                
+                if (pageNumbers.length > 0) {
+                  let pageNum = 1;
+                  pageNumbers.forEach(el => {
+                    el.textContent = pageNum++;
+                  });
+                }
+              });
+            </script>
           </body>
         </html>
       `;
@@ -169,15 +350,204 @@ export default function JobDetailScreen() {
         mimeType: 'application/pdf',
         dialogTitle: `Share ${filename}`
       });
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Aura Error', 'Failed to generate tailored CV.');
-    } finally {
-      setLoading(false);
-    }
-  };
+     } catch (error) {
+       console.error(error);
+       Alert.alert('Aura Error', 'Failed to generate tailored CV.');
+     } finally {
+       setLoading(false);
+     }
+   };
 
-  return (
+   const handleTailorCoverLetter = async () => {
+     if (!user?.baseCV) {
+       Alert.alert('Aura Missing', 'Complete your profile first.');
+       return;
+     }
+     setTailoringCoverLetter(true);
+     try {
+       const tailored = await getTailoredCoverLetter(
+         job.description, 
+         user.baseCV,
+         job.company || '',
+         job.title || ''
+       );
+       
+       const html = `
+         <!DOCTYPE html>
+         <html>
+           <head>
+             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+             <style>
+               body { 
+                 font-family: 'DM Sans', sans-serif; 
+                 padding: 40px; 
+                 color: #1a1a1a; 
+                 line-height: 1.6;
+                 margin: 0;
+               }
+               
+               /* Professional letter styling */
+               .letter-container {
+                 max-width: 800px;
+                 margin: 0 auto;
+               }
+               
+               .header-info {
+                 margin-bottom: 30px;
+               }
+               
+               .personal-info {
+                 margin-bottom: 20px;
+               }
+               
+               .date {
+                 font-size: 14px;
+                 color: #666;
+                 margin-bottom: 20px;
+               }
+               
+               .company-info {
+                 margin-bottom: 20px;
+               }
+               
+               .salutation {
+                 font-size: 16px;
+                 margin-bottom: 20px;
+                 font-weight: 500;
+               }
+               
+               .paragraph {
+                 font-size: 15px;
+                 line-height: 1.6;
+                 margin-bottom: 20px;
+                 text-align: justify;
+               }
+               
+               .closing {
+                 margin-top: 40px;
+                 margin-bottom: 10px;
+                 font-size: 16px;
+                 font-weight: 500;
+               }
+               
+               .signature {
+                 margin-top: 40px;
+                 font-size: 16px;
+                 font-weight: 600;
+               }
+               
+               /* Footer for page numbers */
+               .footer {
+                 position: fixed;
+                 bottom: 0;
+                 left: 0;
+                 right: 0;
+                 background: #fff;
+                 border-top: 1px solid #eee;
+                 padding: 10px 40px;
+                 font-size: 10px;
+                 color: #666;
+                 display: flex;
+                 justify-content: space-between;
+                 align-items: center;
+                 z-index: 100;
+               }
+               
+               @page {
+                 margin: 2cm;
+                 @bottom-center {
+                   content: counter(page);
+                   font-family: 'DM Sans', sans-serif;
+                   font-size: 10px;
+                   color: #666;
+                 }
+               }
+             </style>
+           </head>
+           <body>
+             <div class="letter-container">
+               <div class="header-info">
+                 <div class="personal-info">
+                   <strong>${tailored.personal_info.name || ''}</strong><br>
+                   ${tailored.personal_info.email || ''}<br>
+                   ${tailored.personal_info.phone || ''}
+                 </div>
+               </div>
+               
+               <div class="date">${tailored.date || new Date().toLocaleDateString()}</div>
+               
+               <div class="company-info">
+                 ${tailored.company_address || job.company || ''}<br>
+                 To: ${tailored.hiring_manager || 'Hiring Manager'}
+               </div>
+               
+               <div class="salutation">${tailored.salutation || 'Dear Hiring Manager,'}</div>
+               
+               <div class="paragraph">${tailored.paragraph1 || ''}</div>
+               <div class="paragraph">${tailored.paragraph2 || ''}</div>
+               <div class="paragraph">${tailored.paragraph3 || ''}</div>
+               
+               <div class="closing">${tailored.closing || 'Sincerely,'}</div>
+               <div class="signature">${tailored.signature || ''}</div>
+             </div>
+             
+             <!-- Footer -->
+             <div class="footer">
+               <div class="footer-left">
+                 ${tailored.personal_info.name || ''} | ${tailored.personal_info.email || ''}
+               </div>
+               <div class="footer-right">
+                 Page <span class="page-number"></span>
+               </div>
+             </div>
+             
+             <script>
+               document.addEventListener('DOMContentLoaded', function() {
+                 // Add page numbers
+                 const pageNumbers = document.querySelectorAll('.page-number');
+                 
+                 if (pageNumbers.length > 0) {
+                   let pageNum = 1;
+                   pageNumbers.forEach(el => {
+                     el.textContent = pageNum++;
+                   });
+                 }
+               });
+             </script>
+           </body>
+         </html>
+       `;
+       
+       const { uri } = await Print.printToFileAsync({ html });
+       
+       // Construct a professional filename: [Full-Name]-[jobrole]-[company]-cover-letter.pdf
+       const cleanName = (user.name || 'User').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+       const cleanTitle = job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+       const cleanCompany = job.company.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+       const filename = \`\${cleanName}-\${cleanTitle}-\${cleanCompany}-cover-letter.pdf\`;
+       const newUri = \`\${FileSystem.cacheDirectory}\${filename}\`;
+ 
+       // Move the random-named file to our professionally named file in cache
+       await FileSystem.moveAsync({
+         from: uri,
+         to: newUri,
+       });
+
+       await Sharing.shareAsync(newUri, { 
+         UTI: '.pdf', 
+         mimeType: 'application/pdf',
+         dialogTitle: \`Share \${filename}\`
+       });
+     } catch (error) {
+       console.error(error);
+       Alert.alert('Aura Error', 'Failed to generate tailored cover letter.');
+     } finally {
+       setTailoringCoverLetter(false);
+     }
+   };
+
+   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       <LinearGradient colors={['#FDFDFF', '#F3F4FF', '#EBEBFF']} style={styles.background} />
       
@@ -209,26 +579,37 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Action Hub */}
-      <View style={styles.actionHub}>
-         <TouchableOpacity style={styles.primaryAction} onPress={handleTailorCV} disabled={loading}>
-            <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.gradientBtn}>
-               {loading ? <ActivityIndicator color="#fff" /> : (
-                 <>
-                  <MaterialCommunityIcons name="file-pdf-box" size={20} color="#fff" />
-                  <Text style={styles.btnText}>Tailor CV</Text>
-                 </>
-               )}
-            </LinearGradient>
-         </TouchableOpacity>
-         
-         <Link href={`/job/prep/${job.id}`} asChild>
-            <TouchableOpacity style={styles.secondaryAction}>
-               <MaterialCommunityIcons name="lightning-bolt" size={20} color="#6366F1" />
-               <Text style={styles.secondaryBtnText}>Prep</Text>
-            </TouchableOpacity>
-         </Link>
-      </View>
+       {/* Action Hub */}
+       <View style={styles.actionHub}>
+          <TouchableOpacity style={styles.primaryAction} onPress={handleTailorCV} disabled={loading}>
+             <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.gradientBtn}>
+                {loading ? <ActivityIndicator color="#fff" /> : (
+                  <>
+                   <MaterialCommunityIcons name="file-pdf-box" size={20} color="#fff" />
+                   <Text style={styles.btnText}>Tailor CV</Text>
+                  </>
+                )}
+             </LinearGradient>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.secondaryAction} onPress={handleTailorCoverLetter} disabled={tailoringCoverLetter}>
+             <LinearGradient colors={['#10B981', '#059669']} style={styles.gradientBtn}>
+                {tailoringCoverLetter ? <ActivityIndicator color="#fff" /> : (
+                  <>
+                   <MaterialCommunityIcons name="file-document" size={20} color="#fff" />
+                   <Text style={styles.btnText}>Tailor Cover Letter</Text>
+                  </>
+                )}
+             </LinearGradient>
+          </TouchableOpacity>
+          
+          <Link href={`/job/prep/${job.id}`} asChild>
+             <TouchableOpacity style={styles.secondaryAction}>
+                <MaterialCommunityIcons name="lightning-bolt" size={20} color="#6366F1" />
+                <Text style={styles.secondaryBtnText}>Prep</Text>
+             </TouchableOpacity>
+          </Link>
+       </View>
 
       {/* Analysis Grid */}
       <View style={styles.section}>

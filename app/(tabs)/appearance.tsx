@@ -20,29 +20,47 @@ export default function AppearanceScreen() {
 
   const colorSchemes = {
     blue: {
-      primary: "#6366F1",
-      secondary: "#8B5CF6",
-      gradient: ["#6366F1", "#8B5CF6"],
-      name: "Ocean Blue"
+      primary: "#007AFF",
+      secondary: "#5AC8FA",
+      gradient: ["#007AFF", "#5AC8FA"],
+      name: "iOS Blue"
     },
     purple: {
-      primary: "#8B5CF6",
-      secondary: "#A855F7",
-      gradient: ["#8B5CF6", "#A855F7"],
-      name: "Royal Purple"
+      primary: "#BF5AF2",
+      secondary: "#A78BFA",
+      gradient: ["#BF5AF2", "#A78BFA"],
+      name: "Violet Purple"
     },
     green: {
-      primary: "#10B981",
-      secondary: "#059669",
-      gradient: ["#10B981", "#059669"],
-      name: "Forest Green"
+      primary: "#34C759",
+      secondary: "#30D158",
+      gradient: ["#34C759", "#30D158"],
+      name: "Apple Green"
     },
     amber: {
-      primary: "#F59E0B",
-      secondary: "#D97706",
-      gradient: ["#F59E0B", "#D97706"],
-      name: "Sunset Amber"
+      primary: "#FF9500",
+      secondary: "#FFCC00",
+      gradient: ["#FF9500", "#FFCC00"],
+      name: "Orange"
     }
+  };
+
+  // Apple-inspired dark mode colors
+  const appleDarkColors = {
+    background: "#0A0A0A",      // Very dark, warm black
+    surface: "#1C1C1E",        // Dark gray with warmth
+    surfaceVariant: "#2C2C2E", // Slightly lighter surface
+    backgroundVariant: "#121212", // Even darker background
+    text: "#FFFFFF",           // Pure white text
+    textSecondary: "#8E8E93",  // Gray text for secondary info
+    textTertiary: "#48484A",   // Very dim text for tertiary info
+    border: "#38383A",         // Subtle border color
+    shadow: "#000000",         // Pure black for shadows
+    primary: "#007AFF",        // Apple blue
+    primaryVariant: "#5856D6", // Lighter blue variant
+    success: "#34C759",        // Apple green
+    warning: "#FF9500",        // Apple orange
+    error: "#FF3B30",          // Apple red
   };
 
   const handleSave = async () => {
@@ -74,6 +92,85 @@ export default function AppearanceScreen() {
 
   const currentScheme = colorSchemes[colorScheme as keyof typeof colorSchemes];
 
+  const getThemeColors = () => {
+    if (theme === "dark") {
+      return appleDarkColors;
+    } else {
+      return {
+        background: "#FFFFFF",
+        surface: "#F9FAFB",
+        surfaceVariant: "#F3F4F6",
+        backgroundVariant: "#FEFEFE",
+        text: "#0F172A",
+        textSecondary: "#64748B",
+        textTertiary: "#94A3B8",
+        border: "#E5E7EB",
+        shadow: "#000000",
+        primary: colorSchemes[colorScheme].primary,
+        primaryVariant: colorSchemes[colorScheme].secondary,
+        success: "#10B981",
+        warning: "#F59E0B",
+        error: "#EF4444",
+      };
+    }
+  };
+
+  const themeColors = getThemeColors();
+
+  // Dynamic styles based on theme
+  const getDynamicStyles = () => ({
+    optionButton: {
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.border,
+    },
+    optionButtonSelected: {
+      backgroundColor: themeColors.primary + "10",
+      borderColor: themeColors.primary,
+    },
+    optionText: {
+      color: themeColors.textSecondary,
+    },
+    optionTextSelected: {
+      color: themeColors.primary,
+    },
+    colorOption: {
+      borderColor: themeColors.border,
+    },
+    colorOptionSelected: {
+      borderColor: themeColors.primary,
+      shadowColor: themeColors.primary,
+    },
+    colorPreview: {
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.border,
+    },
+    colorName: {
+      color: themeColors.text,
+    },
+    switchContainer: {
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.border,
+    },
+    switchTitle: {
+      color: themeColors.text,
+    },
+    switchDesc: {
+      color: themeColors.textSecondary,
+    },
+    resetButton: {
+      backgroundColor: themeColors.surface,
+      borderColor: themeColors.border,
+    },
+    resetButtonText: {
+      color: themeColors.textSecondary,
+    },
+    saveButton: {
+      shadowOpacity: theme === "dark" ? 0.3 : 0.1,
+    },
+  });
+
+  const dynamicStyles = getDynamicStyles();
+
   return (
     <ScrollView
       style={styles.container}
@@ -81,15 +178,15 @@ export default function AppearanceScreen() {
       showsVerticalScrollIndicator={false}
     >
       <LinearGradient
-        colors={theme === "dark" ? ["#1a1a2e", "#16213e"] : ["#FDFDFF", "#F3F4FF"]}
+        colors={theme === "dark" ? [themeColors.background, themeColors.surface] : ["#FDFDFF", "#F3F4FF"]}
         style={styles.background}
       />
 
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme === "dark" ? "#fff" : "#0F172A" }]}>
+        <Text style={[styles.headerTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>
           Appearance
         </Text>
-        <Text style={[styles.headerSubtitle, { color: theme === "dark" ? "#94A3B8" : "#64748B" }]}>
+        <Text style={[styles.headerSubtitle, { color: theme === "dark" ? "#8E8E93" : "#64748B" }]}>
           Customize your AuraJobs experience
         </Text>
       </View>
@@ -99,21 +196,23 @@ export default function AppearanceScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="theme-light-dark" size={20} color={currentScheme.primary} />
-            <Text style={styles.sectionTitle}>Theme</Text>
+            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Theme</Text>
           </View>
           
           <View style={styles.optionGroup}>
             <TouchableOpacity
               style={[
                 styles.optionButton,
-                theme === "light" && styles.optionButtonSelected,
+                dynamicStyles.optionButton,
+                theme === "light" && dynamicStyles.optionButtonSelected,
                 { borderColor: currentScheme.primary }
               ]}
               onPress={() => setTheme("light")}
             >
               <Text style={[
                 styles.optionText,
-                theme === "light" && { color: currentScheme.primary }
+                dynamicStyles.optionText,
+                theme === "light" && dynamicStyles.optionTextSelected
               ]}>
                 Light
               </Text>
@@ -122,14 +221,16 @@ export default function AppearanceScreen() {
             <TouchableOpacity
               style={[
                 styles.optionButton,
-                theme === "dark" && styles.optionButtonSelected,
+                dynamicStyles.optionButton,
+                theme === "dark" && dynamicStyles.optionButtonSelected,
                 { borderColor: currentScheme.primary }
               ]}
               onPress={() => setTheme("dark")}
             >
               <Text style={[
                 styles.optionText,
-                theme === "dark" && { color: currentScheme.primary }
+                dynamicStyles.optionText,
+                theme === "dark" && dynamicStyles.optionTextSelected
               ]}>
                 Dark
               </Text>
@@ -138,14 +239,16 @@ export default function AppearanceScreen() {
             <TouchableOpacity
               style={[
                 styles.optionButton,
-                theme === "auto" && styles.optionButtonSelected,
+                dynamicStyles.optionButton,
+                theme === "auto" && dynamicStyles.optionButtonSelected,
                 { borderColor: currentScheme.primary }
               ]}
               onPress={() => setTheme("auto")}
             >
               <Text style={[
                 styles.optionText,
-                theme === "auto" && { color: currentScheme.primary }
+                dynamicStyles.optionText,
+                theme === "auto" && dynamicStyles.optionTextSelected
               ]}>
                 Auto
               </Text>
@@ -156,8 +259,8 @@ export default function AppearanceScreen() {
         {/* Color Scheme */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="palette" size={20} color={currentScheme.primary} />
-            <Text style={styles.sectionTitle}>Color Scheme</Text>
+            <MaterialCommunityIcons name="palette-outline" size={20} color={currentScheme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Color Scheme</Text>
           </View>
           
           <View style={styles.colorGrid}>
@@ -166,7 +269,8 @@ export default function AppearanceScreen() {
                 key={key}
                 style={[
                   styles.colorOption,
-                  colorScheme === key && styles.colorOptionSelected,
+                  dynamicStyles.colorOption,
+                  colorScheme === key && dynamicStyles.colorOptionSelected,
                   { backgroundColor: scheme.primary }
                 ]}
                 onPress={() => setColorScheme(key)}
@@ -178,12 +282,12 @@ export default function AppearanceScreen() {
             ))}
           </View>
           
-          <View style={styles.colorPreview}>
+          <View style={[styles.colorPreview, dynamicStyles.colorPreview]}>
             <LinearGradient
               colors={currentScheme.gradient}
               style={styles.gradientPreview}
             />
-            <Text style={styles.colorName}>{currentScheme.name}</Text>
+            <Text style={[styles.colorName, dynamicStyles.colorName]}>{currentScheme.name}</Text>
           </View>
         </View>
 
@@ -191,22 +295,22 @@ export default function AppearanceScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="view-grid" size={20} color={currentScheme.primary} />
-            <Text style={styles.sectionTitle}>Display Options</Text>
+            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Display Options</Text>
           </View>
           
-          <View style={styles.switchContainer}>
+          <View style={[styles.switchContainer, dynamicStyles.switchContainer]}>
             <View style={styles.switchInfo}>
-              <Text style={styles.switchTitle}>Compact Mode</Text>
-              <Text style={styles.switchDesc}>
+              <Text style={[styles.switchTitle, dynamicStyles.switchTitle]}>Compact Mode</Text>
+              <Text style={[styles.switchDesc, dynamicStyles.switchDesc]}>
                 Show more content in less space
               </Text>
             </View>
             <Switch
               value={compactMode}
               onValueChange={setCompactMode}
-              trackColor={{ false: "#E5E7EB", true: currentScheme.primary }}
-              thumbColor={compactMode ? "#fff" : "#F3F4F6"}
-              ios_backgroundColor="#E5E7EB"
+              trackColor={{ false: themeColors.border, true: currentScheme.primary }}
+              thumbColor={compactMode ? "#fff" : themeColors.surface}
+              ios_backgroundColor={themeColors.border}
             />
           </View>
         </View>
@@ -214,16 +318,16 @@ export default function AppearanceScreen() {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.resetButton, { borderColor: currentScheme.primary }]}
+            style={[styles.resetButton, dynamicStyles.resetButton, { borderColor: currentScheme.primary }]}
             onPress={resetToDefaults}
           >
-            <Text style={[styles.resetButtonText, { color: currentScheme.primary }]}>
+            <Text style={[styles.resetButtonText, dynamicStyles.resetButtonText, { color: currentScheme.primary }]}>
               Reset to Defaults
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: currentScheme.primary }]}
+            style={[styles.saveButton, dynamicStyles.saveButton, { backgroundColor: currentScheme.primary }]}
             onPress={handleSave}
             disabled={saving}
           >
@@ -244,143 +348,147 @@ export default function AppearanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  background: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
-  scrollContent: { padding: 24 },
-  header: { marginTop: 40, marginBottom: 30 },
-  headerTitle: {
-    fontSize: 42,
-    fontWeight: "900",
-    letterSpacing: -1,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginTop: 8,
-  },
-  settingsContainer: { gap: 24 },
-  section: { backgroundColor: "transparent" },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginLeft: 8,
-  },
-  optionGroup: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  optionButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-  },
-  optionButtonSelected: {
-    backgroundColor: "#F3F5FF",
-  },
-  optionText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#64748B",
-  },
-  colorGrid: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  colorOption: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  colorOptionSelected: {
-    borderWidth: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  colorPreview: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#EEF2FF",
-  },
-  gradientPreview: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  colorName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F172A",
-  },
-  switchContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#EEF2FF",
-  },
-  switchInfo: { flex: 1 },
-  switchTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0F172A",
-    marginBottom: 4,
-  },
-  switchDesc: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-  actionButtons: {
-    gap: 16,
-    marginTop: 32,
-  },
-  resetButton: {
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 2,
-    alignItems: "center",
-  },
-  resetButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  saveButton: {
-    height: 56,
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-  },
-  saveGradient: { flex: 1, justifyContent: "center", alignItems: "center" },
-  saveButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});
+  const styles = StyleSheet.create({
+    container: { flex: 1 },
+    background: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
+    scrollContent: { 
+      padding: 24,
+      paddingBottom: 40,
+    },
+    header: { marginTop: 40, marginBottom: 30 },
+    headerTitle: {
+      fontSize: 42,
+      fontWeight: "900",
+      letterSpacing: -1,
+    },
+    headerSubtitle: {
+      fontSize: 16,
+      fontWeight: "500",
+      marginTop: 8,
+    },
+    settingsContainer: { gap: 24 },
+    section: { 
+      backgroundColor: "transparent",
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginLeft: 8,
+    },
+    optionButton: {
+      flex: 1,
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 2,
+      backgroundColor: "#FFFFFF",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 52,
+    },
+    optionButtonSelected: {
+      backgroundColor: "#F3F5FF",
+      borderWidth: 2,
+      borderColor: "#6366F1",
+    },
+    optionText: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: "#64748B",
+    },
+    colorGrid: {
+      flexDirection: "row",
+      gap: 12,
+      marginBottom: 16,
+    },
+    colorOption: {
+      width: 64,
+      height: 64,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: "#E5E7EB",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    colorOptionSelected: {
+      borderWidth: 3,
+      borderColor: "#6366F1",
+      shadowColor: "#6366F1",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+    },
+    colorPreview: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 16,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "#E5E7EB",
+    },
+    gradientPreview: {
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+    },
+    colorName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#0F172A",
+    },
+    switchContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+      backgroundColor: "#FFFFFF",
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: "#E5E7EB",
+    },
+    switchInfo: { flex: 1 },
+    switchTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#0F172A",
+      marginBottom: 4,
+    },
+    switchDesc: {
+      fontSize: 14,
+      color: "#64748B",
+    },
+    resetButton: {
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 2,
+      alignItems: "center",
+      backgroundColor: "#FFFFFF",
+      borderColor: "#E5E7EB",
+    },
+    resetButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#64748B",
+    },
+    saveButton: {
+      height: 56,
+      borderRadius: 16,
+      overflow: "hidden",
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.1,
+      shadowRadius: 16,
+    },
+    saveGradient: { flex: 1, justifyContent: "center", alignItems: "center" },
+    saveButtonText: {
+      color: "#FFFFFF",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+  });

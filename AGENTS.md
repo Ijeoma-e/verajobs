@@ -93,6 +93,16 @@ Frontend now includes a dual-selection UI:
 - **Job Pipeline**: Track application status with filtering and management
 - **Vera Assistant**: AI-powered career assistant with voice support
 - **CV Tailoring**: Automatic resume optimization for specific roles
+- **Design Skills**: Access to 59+ DESIGN.md files from popular websites (Apple, Spotify, Uber, etc.)
+
+## Design Skills
+The awesome-design-md skill provides access to curated DESIGN.md files from real applications:
+- **Technology**: Apple, Spotify, Uber, Airbnb, Vercel
+- **Social**: Pinterest, Intercom, Cohere
+- **E-commerce**: Ferrari, Lamborghini, Renault, Coinbase
+- **Developer**: ClickHouse, Zapier, Cursor, HashiCorp, Mintlify
+
+Usage: `python3 .gemini/skills/awesome-design-md/scripts/search.py "<query>"`
 
 ## Testing & Verification
 - No formal test suite configured
