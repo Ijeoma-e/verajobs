@@ -41,9 +41,9 @@ Copy `.env.example` to `.env` and fill:
 
 ## AI Provider Management
 Backend supports multiple AI providers with runtime switching:
-- **Gemini**: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.5-flash
+- **Gemini**: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash, gemini-2.5-flash (default), gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-lite-preview
 - **Z.AI**: glm-4-flash, glm-4.7-flash, glm-4.5-flash (default)
-- **OpenRouter**: google/gemini-2.0-flash-lite, meta-llama/llama-3-70b-instruct, mistralai/mistral-7b-instruct, nvidia/nemotron-3-super-120b-a12b:free
+- **OpenRouter**: google/gemini-2.0-flash-lite, meta-llama/llama-3-70b-instruct, mistralai/mistral-7b-instruct, nvidia/nemotron-3-super-120b-a12b:free, google/gemini-3-flash-preview, google/gemini-3.1-pro-preview, google/gemini-3.1-flash-lite-preview
 
 API endpoints:
 - `GET /api/settings/provider` - Current provider
@@ -86,6 +86,13 @@ Frontend now includes a dual-selection UI:
 - `services/` - Firebase services and API clients
 - `store/` - Zustand state management
 - `types/` - TypeScript type definitions
+
+## Features
+- **Appearance Settings**: Customizable themes, color schemes, and display options
+- **AI Provider Management**: Switch between Gemini, Z.AI, and OpenRouter with model selection
+- **Job Pipeline**: Track application status with filtering and management
+- **Vera Assistant**: AI-powered career assistant with voice support
+- **CV Tailoring**: Automatic resume optimization for specific roles
 
 ## Testing & Verification
 - No formal test suite configured

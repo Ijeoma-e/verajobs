@@ -12,6 +12,13 @@ interface UserProfile {
     isAutonomous: boolean;
     scanFrequency: 'daily' | 'weekly';
     autoTailor: boolean;
+    provider: string;
+    model: string;
+  };
+  appearance?: {
+    theme: 'light' | 'dark' | 'auto';
+    colorScheme: 'blue' | 'purple' | 'green' | 'amber';
+    compactMode: boolean;
   };
 }
 

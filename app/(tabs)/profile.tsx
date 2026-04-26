@@ -586,6 +586,32 @@ export default function ProfileScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
+        {/* Appearance Settings */}
+        <TouchableOpacity
+          style={styles.appearanceButton}
+          onPress={() => {
+            // In a real app, this would navigate to the appearance screen
+            // For now, we'll show an alert
+            Alert.alert(
+              "Appearance Settings",
+              "Appearance customization will be available in the next update!",
+              [{ text: "OK", style: "default" }]
+            );
+          }}
+        >
+          <LinearGradient
+            colors={["#6366F1", "#8B5CF6"]}
+            style={styles.appearanceGradient}
+          >
+            <MaterialCommunityIcons
+              name="palette"
+              size={20}
+              color="#FFFFFF"
+            />
+            <Text style={styles.appearanceText}>Customize Appearance</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
         <View style={styles.securityBox}>
           <MaterialCommunityIcons
             name="shield-check-outline"
@@ -675,6 +701,29 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     marginLeft: 6,
     fontWeight: "500",
+  },
+  appearanceButton: {
+    height: 56,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginTop: 10,
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+  },
+  appearanceGradient: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  appearanceText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
   providerOption: {
     flexDirection: "row",

@@ -32,6 +32,24 @@ const availableModels = {
       speed: "Very Fast",
       type: "Free",
     },
+    {
+      id: "gemini-3-flash-preview",
+      name: "Gemini 3 Flash Preview",
+      speed: "Very Fast",
+      type: "Preview",
+    },
+    {
+      id: "gemini-3.1-pro-preview",
+      name: "Gemini 3.1 Pro Preview",
+      speed: "Balanced",
+      type: "Preview",
+    },
+    {
+      id: "gemini-3.1-flash-lite-preview",
+      name: "Gemini 3.1 Flash Lite Preview",
+      speed: "Very Fast",
+      type: "Preview",
+    },
   ],
   zai: [
     {
@@ -72,6 +90,24 @@ const availableModels = {
       name: "NVIDIA Nemotron 3 Super 120B",
       speed: "Balanced",
       type: "Free",
+    },
+    {
+      id: "google/gemini-3-flash-preview",
+      name: "Gemini 3 Flash Preview",
+      speed: "Very Fast",
+      type: "Preview",
+    },
+    {
+      id: "google/gemini-3.1-pro-preview",
+      name: "Gemini 3.1 Pro Preview",
+      speed: "Balanced",
+      type: "Preview",
+    },
+    {
+      id: "google/gemini-3.1-flash-lite-preview",
+      name: "Gemini 3.1 Flash Lite Preview",
+      speed: "Very Fast",
+      type: "Preview",
     },
   ],
 };

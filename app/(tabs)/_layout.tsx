@@ -61,6 +61,14 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="appearance"
+        options={{
+          title: 'Appearance',
+          tabBarIcon: ({ color }) => <TabBarIcon name="palette" color={color} />,
+          href: null, // Hide from tab bar initially
+        }}
+      />
     </Tabs>
   );
 }
