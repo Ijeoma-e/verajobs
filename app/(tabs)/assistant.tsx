@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
 import { Text, View } from '@/components/Themed';
 import { useStore } from '@/store/useStore';
 import { askAssistant, discoverJobs } from '@/services/api';
+import { createConversation, addMessageToConversation, getUserConversation } from '@/services/conversation';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -18,24 +19,51 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const isPreparing = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
+    // Load or create conversation
+    const loadConversation = async () => {
+      if (user?.id) {
+        try {
+          const conversation = await getUserConversation(user.id);
+          if (conversation) {
+            setConversationId(conversation.id);
+            setMessages(conversation.messages);
+          } else {
+            const newConversationId = await createConversation(user.id);
+            setConversationId(newConversationId);
+          }
+        } catch (error) {
+          console.error('Error loading conversation:', error);
+        }
+      }
+    };
+
+    loadConversation();
+
     const unseenJobs = discoveredJobs.filter(j => !j.isSeen);
     if (unseenJobs.length > 0) {
       setTimeout(() => {
         const report = {
           id: 'report-' + Date.now(),
           text: `Aura Intelligence Alert: I've identified ${unseenJobs.length} new high-fit roles while your identity was synced. Scanning background portals was successful.`,
-          sender: 'ai',
+          sender: 'ai' as const,
           discoveredJobs: unseenJobs
         };
         setMessages(prev => [...prev, report]);
+        if (conversationId && user?.id) {
+          addMessageToConversation(conversationId, {
+            text: report.text,
+            sender: 'ai'
+          });
+        }
         unseenJobs.forEach(j => markDiscoveredJobAsSeen(j.id));
       }, 1000);
     }
-  }, []);
+  }, [user?.id]);
 
   const handleSend = async (text: string | null, audioUri: string | null = null) => {
     if (!text && !audioUri) return;
@@ -47,27 +75,55 @@ export default function AssistantScreen() {
     setLoading(true);
 
     try {
+      // Save user message to conversation
+      if (conversationId && text && user?.id) {
+        await addMessageToConversation(conversationId, {
+          text: displayMsg,
+          sender: 'user'
+        });
+      }
+
       // Agentic Intent Detection: If user mentions "scan" or "find jobs"
       const lowerText = (text || "").toLowerCase();
       if (lowerText.includes("scan") || lowerText.includes("find jobs")) {
-        setMessages(prev => [...prev, { id: Date.now() + 5, text: "Initiating Autonomous Discovery Loop... Scoping career portals.", sender: 'ai' }]);
+        const aiMsg = { id: Date.now() + 5, text: "Initiating Autonomous Discovery Loop... Scoping career portals.", sender: 'ai' };
+        setMessages(prev => [...prev, aiMsg]);
+        if (conversationId && text && user?.id) {
+          await addMessageToConversation(conversationId, {
+            text: aiMsg.text,
+            sender: 'ai'
+          });
+        }
         
         const existingUrls = discoveredJobs.map(j => j.url);
         const result = await discoverJobs(user?.preferences || "", user?.baseCV || "", existingUrls);
         
         setDiscoveredJobs([...result.discoveredJobs, ...discoveredJobs]);
         
-        const aiMsg = { 
+        const discoveryMsg = { 
           id: Date.now() + 1, 
           text: result.message, 
           sender: 'ai',
           discoveredJobs: result.discoveredJobs
         };
-        setMessages(prev => [...prev, aiMsg]);
+        setMessages(prev => [...prev, discoveryMsg]);
+        if (conversationId) {
+          await addMessageToConversation(conversationId, {
+            text: discoveryMsg.text,
+            sender: 'ai'
+          });
+        }
         return;
       }
 
-      const result = await askAssistant(text, audioUri, user, user?.preferences || '');
+      // Send conversation history for AI context
+      let conversationHistory = null;
+      if (conversationId && user?.id) {
+        const conversation = await getUserConversation(user.id);
+        conversationHistory = conversation?.messages || null;
+      }
+      
+      const result = await askAssistant(text, audioUri, user, user?.preferences || '', conversationHistory || []);
       const aiMsg = { 
         id: Date.now() + 1, 
         text: result.response_text, 
@@ -78,10 +134,27 @@ export default function AssistantScreen() {
         action: result.search_query ? "Explore Roles" : null
       };
       setMessages(prev => [...prev, aiMsg]);
+if (conversationId && text) {
+          await addMessageToConversation(conversationId, {
+            text: aiMsg.text,
+            sender: 'ai',
+            intent: aiMsg.intent,
+            companies: aiMsg.companies,
+            searchUrl: aiMsg.searchUrl,
+            action: aiMsg.action
+          });
+        }
     } catch (error: any) {
       console.error(error);
       const errorMsg = error.message || "My apologies, I'm momentarily offline.";
-      setMessages(prev => [...prev, { id: Date.now() + 2, text: `Error: ${errorMsg}`, sender: 'ai' }]);
+      const errorMsgObj = { id: Date.now() + 2, text: `Error: ${errorMsg}`, sender: 'ai' };
+      setMessages(prev => [...prev, errorMsgObj]);
+      if (conversationId && text && user?.id) {
+        await addMessageToConversation(conversationId, {
+          text: errorMsgObj.text,
+          sender: 'ai'
+        });
+      }
     } finally {
       setLoading(false);
     }

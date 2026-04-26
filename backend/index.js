@@ -243,10 +243,9 @@ app.post("/api/tailor-cover-letter", async (req, res) => {
 app.post("/api/assistant", upload.single("audio"), async (req, res) => {
   console.log("--- Assistant API Start ---");
 
-  const { message, userProfile, preferences } = req.body;
+  const { message, userProfile, preferences, conversationHistory } = req.body;
   try {
     let prompt = "";
-
     if (req.file && req.file.buffer) {
       // For audio files, we'll convert to base64 and include in prompt
       const audioData = req.file.buffer.toString("base64");
@@ -257,9 +256,19 @@ app.post("/api/assistant", upload.single("audio"), async (req, res) => {
       return res.status(400).json({ error: "No message or file found." });
     }
 
+    // Add conversation context to system prompt
+    let contextPrompt = "";
+    if (conversationHistory && conversationHistory.length > 0) {
+      contextPrompt = "\n\nRecent Conversation Context:\n";
+      conversationHistory.slice(-5).forEach((msg, index) => {
+        contextPrompt += `${index + 1}. ${msg.sender === 'user' ? 'User' : 'Vera'}: ${msg.text}\n`;
+      });
+    }
+
     const systemContext = `
       You are "Vera," a career search agent. 
       User Context: ${preferences || "Not specified"}.
+      ${contextPrompt}
       Return ONLY JSON: { "intent": "SEARCH|VISA|CHAT|EVALUATE", "response_text": "...", "search_query": "...", "suggested_companies": [], "suggested_actions": [] }
     `;
 

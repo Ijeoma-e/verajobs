@@ -62,11 +62,13 @@ export const askAssistant = async (
   audioUri: string | null,
   userProfile: any,
   preferences: string,
+  conversationHistory?: any[],
 ) => {
   const formData = new FormData();
 
   if (message) formData.append("message", message);
   if (preferences) formData.append("preferences", preferences);
+  if (conversationHistory) formData.append("conversationHistory", JSON.stringify(conversationHistory));
 
   if (userProfile) {
     const profileStr =

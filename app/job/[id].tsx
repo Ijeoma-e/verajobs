@@ -345,11 +345,11 @@ export default function JobDetailScreen() {
         to: newUri,
       });
 
-      await Sharing.shareAsync(newUri, { 
-        UTI: '.pdf', 
-        mimeType: 'application/pdf',
-        dialogTitle: `Share ${filename}`
-      });
+       await Sharing.shareAsync(newUri, { 
+         UTI: 'com.adobe.pdf',
+         mimeType: 'application/pdf',
+         dialogTitle: `Share ${filename}`
+       });
      } catch (error) {
        console.error(error);
        Alert.alert('Aura Error', 'Failed to generate tailored CV.');
@@ -534,11 +534,11 @@ export default function JobDetailScreen() {
           to: newUri,
         });
 
-        await Sharing.shareAsync(newUri, { 
-          UTI: '.pdf', 
-          mimeType: 'application/pdf',
-          dialogTitle: `Share ${filename}`
-        });
+         await Sharing.shareAsync(newUri, { 
+           UTI: 'com.adobe.pdf',
+           mimeType: 'application/pdf',
+           dialogTitle: `Share ${filename}`
+         });
      } catch (error) {
        console.error(error);
        Alert.alert('Aura Error', 'Failed to generate tailored cover letter.');
