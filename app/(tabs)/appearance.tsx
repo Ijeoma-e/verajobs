@@ -20,47 +20,54 @@ export default function AppearanceScreen() {
 
   const colorSchemes = {
     blue: {
-      primary: "#007AFF",
-      secondary: "#5AC8FA",
-      gradient: ["#007AFF", "#5AC8FA"],
-      name: "iOS Blue"
+      primary: "#004B9B", // PlayStation Blue
+      secondary: "#0066CC",
+      gradient: ["#004B9B", "#0066CC"],
+      name: "PlayStation Blue"
     },
     purple: {
-      primary: "#BF5AF2",
-      secondary: "#A78BFA",
-      gradient: ["#BF5AF2", "#A78BFA"],
-      name: "Violet Purple"
+      primary: "#6A0DAD", // Royal Purple
+      secondary: "#8A2BE2",
+      gradient: ["#6A0DAD", "#8A2BE2"],
+      name: "Royal Purple"
     },
     green: {
-      primary: "#34C759",
-      secondary: "#30D158",
-      gradient: ["#34C759", "#30D158"],
-      name: "Apple Green"
+      primary: "#006400", // Dark Green
+      secondary: "#008000",
+      gradient: ["#006400", "#008000"],
+      name: "Forest Green"
     },
     amber: {
-      primary: "#FF9500",
-      secondary: "#FFCC00",
-      gradient: ["#FF9500", "#FFCC00"],
-      name: "Orange"
+      primary: "#FF8C00", // Dark Orange
+      secondary: "#FFB347",
+      gradient: ["#FF8C00", "#FFB347"],
+      name: "Dark Orange"
+    },
+    gold: {
+      primary: "#FFD700", // Gold (PlayStation accent)
+      secondary: "#FFA500",
+      gradient: ["#FFD700", "#FFA500"],
+      name: "PlayStation Gold"
     }
   };
 
-  // Apple-inspired dark mode colors
-  const appleDarkColors = {
-    background: "#0A0A0A",      // Very dark, warm black
-    surface: "#1C1C1E",        // Dark gray with warmth
-    surfaceVariant: "#2C2C2E", // Slightly lighter surface
-    backgroundVariant: "#121212", // Even darker background
+  // PlayStation-inspired dark mode colors
+  const psDarkColors = {
+    background: "#0A0A0A",      // Deep black like PS5
+    surface: "#151515",        // Slightly lighter than background
+    surfaceVariant: "#2A2A2A", // Subtle surface variation
+    backgroundVariant: "#000000", // Pure black
     text: "#FFFFFF",           // Pure white text
-    textSecondary: "#8E8E93",  // Gray text for secondary info
-    textTertiary: "#48484A",   // Very dim text for tertiary info
-    border: "#38383A",         // Subtle border color
+    textSecondary: "#CCCCCC",  // Light gray for secondary info
+    textTertiary: "#888888",   // Medium gray for tertiary info
+    border: "#2A2A2A",         // Dark gray border
     shadow: "#000000",         // Pure black for shadows
-    primary: "#007AFF",        // Apple blue
-    primaryVariant: "#5856D6", // Lighter blue variant
-    success: "#34C759",        // Apple green
-    warning: "#FF9500",        // Apple orange
-    error: "#FF3B30",          // Apple red
+    primary: "#004B9B",        // PlayStation blue
+    primaryVariant: "#0066CC", // Lighter blue variant
+    success: "#34C759",        // Green for success
+    warning: "#FFA500",        // Orange for warning
+    error: "#FF3B30",          // Red for error
+    gold: "#FFD700",           // Gold for highlights
   };
 
   const handleSave = async () => {
@@ -94,7 +101,7 @@ export default function AppearanceScreen() {
 
   const getThemeColors = () => {
     if (theme === "dark") {
-      return appleDarkColors;
+      return psDarkColors;
     } else {
       return {
         background: "#FFFFFF",
@@ -108,9 +115,10 @@ export default function AppearanceScreen() {
         shadow: "#000000",
         primary: colorSchemes[colorScheme].primary,
         primaryVariant: colorSchemes[colorScheme].secondary,
-        success: "#10B981",
-        warning: "#F59E0B",
-        error: "#EF4444",
+        success: "#34C759",
+        warning: "#FFA500",
+        error: "#FF3B30",
+        gold: "#FFD700",
       };
     }
   };
@@ -183,10 +191,10 @@ export default function AppearanceScreen() {
       />
 
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>
           Appearance
         </Text>
-        <Text style={[styles.headerSubtitle, { color: theme === "dark" ? "#8E8E93" : "#64748B" }]}>
+        <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>
           Customize your AuraJobs experience
         </Text>
       </View>
@@ -196,7 +204,7 @@ export default function AppearanceScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="theme-light-dark" size={20} color={currentScheme.primary} />
-            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Theme</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Theme</Text>
           </View>
           
           <View style={styles.optionGroup}>
@@ -260,7 +268,7 @@ export default function AppearanceScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="palette-outline" size={20} color={currentScheme.primary} />
-            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Color Scheme</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Color Scheme</Text>
           </View>
           
           <View style={styles.colorGrid}>
@@ -295,7 +303,7 @@ export default function AppearanceScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="view-grid" size={20} color={currentScheme.primary} />
-            <Text style={[styles.sectionTitle, { color: theme === "dark" ? "#FFFFFF" : "#0F172A" }]}>Display Options</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Display Options</Text>
           </View>
           
           <View style={[styles.switchContainer, dynamicStyles.switchContainer]}>
@@ -308,8 +316,8 @@ export default function AppearanceScreen() {
             <Switch
               value={compactMode}
               onValueChange={setCompactMode}
-              trackColor={{ false: themeColors.border, true: currentScheme.primary }}
-              thumbColor={compactMode ? "#fff" : themeColors.surface}
+              trackColor={{ false: themeColors.border, true: themeColors.primary }}
+              thumbColor={compactMode ? themeColors.surface : themeColors.primary}
               ios_backgroundColor={themeColors.border}
             />
           </View>

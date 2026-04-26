@@ -1,7 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -17,20 +17,40 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarActiveTintColor: isDark ? Colors.dark.primary : Colors.light.primary,
+        tabBarInactiveTintColor: isDark ? Colors.dark.textSecondary : Colors.light.textSecondary,
+        tabBarStyle: {
+          backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+          borderTopWidth: isDark ? 1 : 0,
+          borderTopColor: isDark ? Colors.dark.border : Colors.light.border,
+          height: 60,
+          paddingBottom: Platform.OS === 'ios' ? 0 : 0,
+        },
         headerShown: useClientOnlyValue(false, true),
+        headerStyle: {
+          backgroundColor: isDark ? Colors.dark.background : Colors.light.background,
+          borderBottomWidth: isDark ? 1 : 0,
+          borderBottomColor: isDark ? Colors.dark.border : Colors.light.border,
+        },
+        headerTitleAlign: 'center',
+        headerTitleStyle: {
+          fontWeight: '900',
+          color: isDark ? Colors.dark.text : Colors.light.text,
+          fontSize: 22,
+          letterSpacing: -0.5,
+        },
+        headerBackTitleVisible: false,
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Pipeline',
-          tabBarIcon: ({ color }) => <TabBarIcon name="list" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="list" size={28} color={color} style={{ marginBottom: -3 }} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
@@ -51,21 +71,21 @@ export default function TabLayout() {
         name="assistant"
         options={{
           title: 'Vera',
-          tabBarIcon: ({ color }) => <TabBarIcon name="comment" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="comment" size={28} color={color} style={{ marginBottom: -3 }} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="user" size={28} color={color} style={{ marginBottom: -3 }} />,
         }}
       />
       <Tabs.Screen
         name="appearance"
         options={{
           title: 'Appearance',
-          tabBarIcon: ({ color }) => <TabBarIcon name="paint-brush" color={color} />,
+          tabBarIcon: ({ color }) => <FontAwesome name="paint-brush" size={28} color={color} style={{ marginBottom: -3 }} />,
         }}
       />
     </Tabs>

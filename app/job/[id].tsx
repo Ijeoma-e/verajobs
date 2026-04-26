@@ -519,26 +519,26 @@ export default function JobDetailScreen() {
          </html>
        `;
        
-       const { uri } = await Print.printToFileAsync({ html });
+        const { uri } = await Print.printToFileAsync({ html });
        
-       // Construct a professional filename: [Full-Name]-[jobrole]-[company]-cover-letter.pdf
-       const cleanName = (user.name || 'User').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-       const cleanTitle = job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-       const cleanCompany = job.company.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-       const filename = \`\${cleanName}-\${cleanTitle}-\${cleanCompany}-cover-letter.pdf\`;
-       const newUri = \`\${FileSystem.cacheDirectory}\${filename}\`;
- 
-       // Move the random-named file to our professionally named file in cache
-       await FileSystem.moveAsync({
-         from: uri,
-         to: newUri,
-       });
+        // Construct a professional filename: [Full-Name]-[jobrole]-[company]-cover-letter.pdf
+        const cleanName = (user.name || 'User').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        const cleanTitle = job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        const cleanCompany = job.company.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        const filename = `${cleanName}-${cleanTitle}-${cleanCompany}-cover-letter.pdf`;
+        const newUri = `${FileSystem.cacheDirectory}${filename}`;
+  
+        // Move the random-named file to our professionally named file in cache
+        await FileSystem.moveAsync({
+          from: uri,
+          to: newUri,
+        });
 
-       await Sharing.shareAsync(newUri, { 
-         UTI: '.pdf', 
-         mimeType: 'application/pdf',
-         dialogTitle: \`Share \${filename}\`
-       });
+        await Sharing.shareAsync(newUri, { 
+          UTI: '.pdf', 
+          mimeType: 'application/pdf',
+          dialogTitle: `Share ${filename}`
+        });
      } catch (error) {
        console.error(error);
        Alert.alert('Aura Error', 'Failed to generate tailored cover letter.');
@@ -720,12 +720,11 @@ const styles = StyleSheet.create({
   auraStatusBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFF', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#EEF2FF' },
   statusDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
   statusLabel: { fontSize: 12, fontWeight: '800', marginRight: 5 },
-  actionHub: { flexDirection: 'row', marginTop: 24, gap: 12, backgroundColor: 'transparent' },
-  primaryAction: { flex: 2, height: 60, borderRadius: 20, overflow: 'hidden', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15, elevation: 8 },
-  gradientBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
-  btnText: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  secondaryAction: { flex: 1, height: 60, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#F0F2FF', justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 6 },
-  secondaryBtnText: { fontSize: 16, fontWeight: '800', color: '#6366F1' },
+   actionHub: { flexDirection: 'row', marginTop: 20, gap: 12, backgroundColor: 'transparent' },
+   actionButton: { flex: 1, height: 56, borderRadius: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+   gradientBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+   btnText: { color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.5 },
+   secondaryBtnText: { fontSize: 13, fontWeight: '600' },
   section: { marginTop: 32, backgroundColor: 'transparent' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, backgroundColor: 'transparent' },
   sectionTitle: { fontSize: 13, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 10 },
